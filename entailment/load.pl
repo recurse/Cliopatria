@@ -32,3 +32,4 @@
 :- use_module(entailment(rdf),	     []).
 :- use_module(entailment(rdfs_lite), []).
 :- use_module(entailment(rdfs),	     []).
+:- use_module(entailment(qldarch),   []).
