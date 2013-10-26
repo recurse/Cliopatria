@@ -100,6 +100,7 @@ http:location(flint,       cliopatria(flint),  []).
 http:location(yasgui,      cliopatria(yasgui), []).
 http:location(api,	   cliopatria(api),    []).
 http:location(json,	   api(json),	       []).
+http:location(qaapi,	   api(qldarch),	       []).
 
 
 		 /*******************************

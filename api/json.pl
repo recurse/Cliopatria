@@ -70,7 +70,7 @@ json_describe(Request) :-
 			      [ %oneof([cbd, scdb, ifcbd, lcbd, hcbd]),
 				oneof([cbd]),
 				default(cbd),
-				description('Algorithm that determines \
+				description('Algorithm that determines \c
 					     the description')
 			      ])
 			]),
