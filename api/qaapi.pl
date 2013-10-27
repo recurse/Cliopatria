@@ -208,7 +208,7 @@ convert_item_to_URI(Item, _) :-
 reconciledTo(PseudoEntity, Building, G) :-
     instance_of(PseudoEntity, qaat:'ProjectName', G),
     rdf(PseudoEntity, qaat:label, Label, G),
-    Label = literal(Value),
+    (Label = literal(atom(Value)) ; Label = literal(type(_, Value))),
 % !!! This may not work, need to query multiple graphs
     (   rdf(Building, qldarch:label, literal(exact(Value), _))
     ;   create_entity(qldarch:'Structure', building, Building, G),
