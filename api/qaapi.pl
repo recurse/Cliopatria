@@ -59,10 +59,11 @@ load_omeka(Request) :-
 
 do(Filename) :-
     baseURI(BaseURI),
-    format(atom(LoadGraph), '~a~a', [BaseURI, 'load']),
+    format(atom(LoadGraph), '~a~a', [BaseURI, '/graph#load']),
     load_file(Filename, LoadGraph),
-    format(atom(CleanGraph), '~a~a', [BaseURI, 'clean']),
+    format(atom(CleanGraph), '~a~a', [BaseURI, '/graph#clean']),
     cleanGraph(LoadGraph, CleanGraph),
+    rdf_assert(BaseURI, rdf:type, qaat:'BaseURI', CleanGraph),
     readGraph(CleanGraph, Graph),
 	graph_json(Graph, JSON),
 	reply_json(JSON).
@@ -82,7 +83,7 @@ atom_split(In, Sep, Head, Tail) :-
 baseURI(BaseURI) :-
     P2D = '~|~`0t~a~2+', % Zero padded 2 digit integer
     atomic_list_concat(
-        ['http://qldarch.net/ns/graph/temp/~a', P2D, P2D, '-', P2D, P2D, P2D, '.', P2D, 'Z#'],
+        ['http://qldarch.net/ns/ingest/~a', P2D, P2D, '-', P2D, P2D, P2D, '.', P2D, 'Z'],
         TempURIFormat
     ),
     get_time(Timestamp),
@@ -144,6 +145,15 @@ entail(S, RdfType, C, G) :-
     instance_of(S, C, G),
     \+ rdf(S, rdf:type, C, G).
 
+% { ?p a foaf:Person .
+%   [ qldarch:interviewee ?p ] . 
+%   } => { ?p a qldarch:Architect} .
+entail(Person, RdfType, Architect, G) :-
+    rdf_equal(RdfType, rdf:type),
+    rdf_equal(Architect, qldarch:'Architect'),
+    rdf(_, qldarch:interviewee, Person, G),
+    entail(Person, rdf:type, foaf:'Person').
+
 %   {
 %      ?interview a qldarch:Interview ;
 %          qaat:transcriptItem ?titem .
@@ -156,13 +166,19 @@ entail(S, RdfType, C, G) :-
 %      ?interview qldarch:hasTranscript ?itemUri .
 %    } .
 entail(Interview, HasTranscript, ItemURI, G) :-
-    entail_G(Interview, HasTranscript, ItemURI, G).
-
-entail_G(Interview, HasTranscript, ItemURI, G) :-
     rdf_equal(HasTranscript, qldarch:hasTranscript),
     instance_of(Interview, qldarch:'Interview', G),
     rdf(Interview, qaat:transcriptItem, TranscriptItem, G),
     convert_item_to_URI(TranscriptItem, ItemURI).
+
+%   { ?e qaat:reconciledTo ?building .
+%     ?e qaat:projectNameOf ?s .
+%   } => { ?s qldarch:depictsBuilding ?building } .
+entail(S, DepictsBuilding, Building, G) :-
+    rdf_equal(DepictsBuilding, qldarch:depictsBuilding),
+    instance_of(PE, qaat:'ProjectName', G),
+    reconciledTo(PE, Building, G),
+    rdf(PE, qaat:projectNameOf, S).
 
 convert_item_to_URI(Item, ItemURI) :-
     Item = literal(atom(V)), !,
@@ -183,6 +199,56 @@ convert_item_to_URI(Item, ItemURI) :-
 convert_item_to_URI(Item, _) :-
     debug(qaconvert, 'Found item: ~w', Item), fail.
 
+%   { ?e a qaat:ProjectName .
+%     ?e qaat:label ?l .
+%     ?building a qldarch:Structure .
+%     ?building qldarch:label ?buildinglabel .
+%     ?l str:equalIgnoringCase ?buildinglabel .
+%   } => { ?e qaat:reconciledTo ?building } . 
+reconciledTo(PseudoEntity, Building, G) :-
+    instance_of(PseudoEntity, qaat:'ProjectName', G),
+    rdf(PseudoEntity, qaat:label, Label, G),
+    Label = literal(Value),
+% !!! This may not work, need to query multiple graphs
+    (   rdf(Building, qldarch:label, literal(exact(Value), _))
+    ;   create_entity(qldarch:'Structure', building, Building, G),
+        rdf_assert(Building, qldarch:label, Label, G)
+    ).
+
+%   { ?e a qaat:DrawingType .
+%     ?e qaat:label ?label .
+%     ?type a skos:Concept .
+%     ?type skos:inScheme qavocab:DrawingType .
+%     ?type qldarch:label ?typelabel .
+%     ?label str:equalIgnoringCase ?typelabel .
+%   } => { ?e qaat:reconciledTo ?type } . 
+%reconciledTo(PseudoEntity, DrawingType, G) :-
+%    instance_of(PseudoEntity, qaat:'DrawingType', G),
+%    rdf(PseudoEntity, qaat:label, Label, G),
+%    qldarch(DrawingType, skos:inScheme qavocab:'DrawingType'), 
+%    instance_of(DrawingType, skos:Concept, G),
+%    qldarch(DrawingType, qldarch:label, TypeLabel),
+%    equal_insensitive(Label, TypeLabel).
+%
+%equal_insensitive(A, B) :-
+%    downcase_atom(A, DA),
+%    downcase_atom(B, DB),
+%    DA == DB.
+
+create_entity(Type, Category, Entity, G) :-
+    nonvar(G) ->
+        rdf(BaseURI, rdf:type, qaat:'BaseURI', G),
+        cnt(Category, N),
+        atomic_list_concat([BaseURI, '/', Category, '#', N], Entity),
+        rdf_assert(Entity, rdf:type, Type, G)
+    ; throw(error(instantiation_error, _)).
+        
+cnt(Category, N) :-
+    catch(nb_getval(Category, N), _, N = 0),
+    New is N + 1,
+    nb_setval(Category, New).
+
+
 instance_of(S, C, G) :-
     (nonvar(S) ; nonvar(C)), !,
     rdf(S, rdf:type, Class, G),
@@ -191,18 +257,6 @@ instance_of(S, C, G) :-
 instance_of(S, C, G) :-
     is_resource_in_graph(S, G),
     instance_of(S, C, G).
-
-
-%    {
-%        ?interview a qldarch:Interview ;
-%            qaat:transcriptItem ?titem .
-%        ( ?lit ?dt ) log:dtlit ?titem .
-%        ?lit string:matches "http://qldarch.net/omeka/items/show/(.*)" .
-%        ?itemUri log:uri ?lit.
-%        ?itemUri a qldarch:Transcript .
-%    } => {
-%        ?interview qldarch:hasTranscript ?itemUri .
-%    } .
 
 is_subclass_of(Sub, Super) :-
     Sub=Super.
