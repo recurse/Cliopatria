@@ -1,6 +1,8 @@
 :- module(qaingest,
     [
-        do/1
+        do/1,
+        is_subclass_of/2,
+        is_resource_in_graph/2
     ]).
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdf_json)).
@@ -21,6 +23,9 @@ This module provides qldarch ingest support.
     assertNormalizedStmt(o,o,o,+),
     entail(r,r,o),
     qldarch(o,o,o),
+    create_entity(r,+,r,+),
+    is_subclass_of(r,r),
+    is_resource_in_graph(r,r),
     instance_of(r,r,r).
 
 :- rdf_register_ns('qldarch', 'http://qldarch.net/ns/rdf/2012-06/terms#').
@@ -282,6 +287,15 @@ qldarch(S, P, O) :-
     rdf(S, P, O, 'http://qldarch.net/ns/rdf/2012-06/terms#').
 
 is_resource_in_graph(R, G) :-
+    nonvar(R), nonvar(G), !,
+    (
+        is_subject_in_graph(R, G) ;
+        is_predicate_in_graph(R, G) ;
+        is_object_in_graph(R, G)
+    ), !.
+
+
+is_resource_in_graph(R, G) :-
     empty_nb_set(Set),
     (
         (
@@ -295,17 +309,20 @@ is_resource_in_graph(R, G) :-
             New == true
         ) ;
         (
-            is_predicate_in_graph(R, G),
+            is_object_in_graph(R, G),
             add_nb_set(R, Set, New),
             New == true
         )
     ).
 
 is_subject_in_graph(S, G) :-
-    rdf(S, _, _, G).
+    rdf(S, _, _, G),
+    rdf_is_resource(S).
 
 is_predicate_in_graph(P, G) :-
-    rdf(_, P, _, G).
+    rdf(_, P, _, G),
+    rdf_is_resource(P).
 
 is_object_in_graph(O, G) :-
-    rdf(_, _, O, G).
+    rdf(_, _, O, G),
+    rdf_is_resource(O).
