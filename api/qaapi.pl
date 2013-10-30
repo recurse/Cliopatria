@@ -1,8 +1,10 @@
 :- module(qaingest,
     [
-        do/1,
         is_subclass_of/2,
-        is_resource_in_graph/2
+        is_resource_in_graph/2,
+        load_file/2,
+        entail/4,
+        do/1
     ]).
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdf_json)).
@@ -21,7 +23,7 @@ This module provides qldarch ingest support.
 
 :- rdf_meta
     assertNormalizedStmt(o,o,o,+),
-    entail(r,r,o),
+    entail(r,r,o,r),
     qldarch(o,o,o),
     create_entity(r,+,r,+),
     is_subclass_of(r,r),
@@ -63,15 +65,17 @@ load_omeka(Request) :-
     do(Filename).
 
 do(Filename) :-
+    ingest(Filename, Graph),
+	graph_json(Graph, JSON),
+	reply_json(JSON).
+
+ingest(Filename, Graph) :-
     baseURI(BaseURI),
     format(atom(LoadGraph), '~a~a', [BaseURI, '/graph#load']),
     load_file(Filename, LoadGraph),
     format(atom(CleanGraph), '~a~a', [BaseURI, '/graph#clean']),
     cleanGraph(LoadGraph, CleanGraph),
-    rdf_assert(BaseURI, rdf:type, qaat:'BaseURI', CleanGraph),
-    readGraph(CleanGraph, Graph),
-	graph_json(Graph, JSON),
-	reply_json(JSON).
+    readGraph(CleanGraph, Graph).
 
 %%  atom_split(+In, +Sep, -Head, -Tail)
 %
@@ -216,7 +220,7 @@ reconciledTo(PseudoEntity, Building, G) :-
     (Label = literal(atom(Value)) ; Label = literal(type(_, Value))),
 % !!! This may not work, need to query multiple graphs
     (   rdf(Building, qldarch:label, literal(exact(Value), _))
-    ;   create_entity(qldarch:'Structure', building, Building, G),
+    ;   create_entity(qldarch:'Structure', Building, G),
         rdf_assert(Building, qldarch:label, Label, G)
     ).
 
@@ -240,11 +244,12 @@ reconciledTo(PseudoEntity, Building, G) :-
 %    downcase_atom(B, DB),
 %    DA == DB.
 
-create_entity(Type, Category, Entity, G) :-
+create_entity(Type, Entity, G) :-
     nonvar(G) ->
-        rdf(BaseURI, rdf:type, qaat:'BaseURI', G),
-        cnt(Category, N),
-        atomic_list_concat([BaseURI, '/', Category, '#', N], Entity),
+%        rdf(BaseURI, rdf:type, qaat:'BaseURI', G),
+%       cnt(Category, N),
+%       atomic_list_concat([BaseURI, '/', Category, '#', N], Entity),
+        rdf_bnode(Entity),
         rdf_assert(Entity, rdf:type, Type, G)
     ; throw(error(instantiation_error, _)).
         
@@ -264,6 +269,10 @@ instance_of(S, C, G) :-
     instance_of(S, C, G).
 
 is_subclass_of(Sub, Super) :-
+    nonvar(Sub), nonvar(Super),
+    Sub=Super, !.
+
+is_subclass_of(Sub, Super) :-
     Sub=Super.
 
 is_subclass_of(Sub, Super) :-
@@ -274,11 +283,11 @@ is_subclass_of(Sub, Super) :-
 is_subclass_of(Sub, Super) :-
     (nonvar(Sub) ->
         qldarch(Sub, rdfs:subClassOf, Mid),
-        is_subclass_of(Mid, Super)
+        is_subclass_of(Mid, Super), !
     ) ;
     (nonvar(Super) ->
         qldarch(Mid, rdfs:subClassOf, Super),
-        is_subclass_of(Sub, Mid)
+        is_subclass_of(Sub, Mid), !
     ) ;
     qldarch(Sub, rdfs:subClassOf, Mid),
     is_subclass_of(Mid, Super).

@@ -1,0 +1,28 @@
+@base <http://qldarch.net/omeka/items/show/> .
+
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix qaat: <http://qldarch.net/ns/omeka/2012-11/auxterms#> .
+@prefix qldarch: <http://qldarch.net/ns/rdf/2012-06/terms#> .
+
+<1> a qaat:BuildingTypology ;
+  qaat:label "Commercial buildings" .
+
+<8>
+    dcterms:created "2012-07-13"^^xsd:string ;
+    dcterms:description "interview with James Birrell"^^xsd:string ;
+    dcterms:title "James Birrell interview"^^xsd:string ;
+    qaat:transcriptItem "http://qldarch.net/omeka/admin/items/show/1764"^^xsd:string ;
+    qldarch:externalLocation "http://qldarch.net/static/Birrrell_JM&AW.ogg"^^xsd:string ;
+    qldarch:location "Maroochydore"^^xsd:string ;
+    qldarch:transcriptLocation "http://qldarch.net/static/transcripts/birrell/Birrell.json"^^xsd:string ;
+    a qldarch:DigitalObject, qldarch:Interview .
+
+<1764>
+    dcterms:created "2012-07-13"^^xsd:string ;
+    dcterms:description "Transcription of the interview with James Birrell"^^xsd:string ;
+    dcterms:title "James Birrell interview transcript"^^xsd:string ;
+    qldarch:hasFile <../../files/show/1521> ;
+    a qldarch:DigitalObject, qldarch:Transcript .
