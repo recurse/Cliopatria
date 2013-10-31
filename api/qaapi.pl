@@ -228,8 +228,8 @@ reconciled_to(PseudoEntity, Entity, G) :-
 %     ?l str:equalIgnoringCase ?buildinglabel .
 %   } => { ?e qaat:reconciledTo ?building } . 
 reconciled_to(PseudoEntity, Building, G) :-
+    atom(PseudoEntity),
     rdf_equal(Catalogue, qacatalog:''),
-    instance_of(PseudoEntity, qaat:'ProjectName', G),
     rdf(PseudoEntity, qaat:label, Label, G),
     (Label = literal(atom(Value)) ; Label = literal(type(_, Value))),
     % Search the ingest graph, and all entity-graphs registered in the catalogue
@@ -241,7 +241,14 @@ reconciled_to(PseudoEntity, Building, G) :-
         (   create_entity(qldarch:'Structure', Building, G),
             rdf_assert(Building, qldarch:label, Label, G)
         )
-    ).
+    ), !.
+
+reconciled_to(PseudoEntity, _, _) :-
+    nonvar(PseudoEntity), !, fail.
+
+reconciled_to(PseudoEntity, Building, G) :-
+    instance_of(PseudoEntity, qaat:'ProjectName', G),
+    reconciled_to(PseudoEntity, Building, G).
 
 %   { ?e a qaat:DrawingType .
 %     ?e qaat:label ?label .
