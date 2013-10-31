@@ -76,54 +76,98 @@ test(all_subclasses) :-
 
 :- end_tests(qldarch).
 
+:- begin_tests(entailment, [
+        setup(init_ont),
+        cleanup(rdf_reset_db)
+    ]).
+
+% Entailment test files
+etfile('basic.ttl', 'basic_out.ttl').
+etfile('basic_bnode.ttl', 'basic_bnode_out.ttl').
+etfile('has_transcript.ttl', 'has_transcript_out.ttl').
+
+test(entailment, [
+        setup(init_ont),
+        cleanup(rdf_reset_db),
+        forall(etfile(InFile, OutFile)) ]) :-
+    assertion(atom(InFile)),
+    assertion(atom(OutFile)),
+    rdf_equal(Test, qaint:test),
+    rdf_equal(Expected, qaint:expected),
+    rdf_equal(Out, qaint:out),
+    load_file(data(InFile), Test),
+    load_file(data(OutFile), Expected),
+    foreach(entail(S, P, O, Test), call(rdf_assert, S, P, O, Out)),
+    (
+        findall(rdf(S,P,O), rdf(S, P, O, Expected), ExpGraph),
+        findall(rdf(S,P,O), rdf(S, P, O, Out), OutGraph),
+        rdf_equal_graphs(ExpGraph, OutGraph, _) ->
+            true ;
+            output_graphs(Expected, Out)
+    ).
+
+:- end_tests(entailment).
+
 :- begin_tests(reconciliation, [
         setup(init_ont),
         cleanup(rdf_reset_db)
     ]).
 
-test(test01_basic) :-
-    rdf_equal(Test, qaint:test),
-    rdf_equal(Expected, qaint:expected),
-    rdf_equal(Out, qaint:out),
-    load_file(data('basic.ttl'), Test),
-    load_file(data('basic_out.ttl'), Expected),
-    foreach(entail(S, P, O, Test), call(rdf_assert, S, P, O, Out)),
-    (
-        findall(rdf(S,P,O), rdf(S, P, O, Expected), ExpGraph),
-        findall(rdf(S,P,O), rdf(S, P, O, Out), OutGraph),
-        rdf_equal_graphs(ExpGraph, OutGraph, _) ->
-            true ;
-            output_graphs(Expected, Out)
-    ).
+% Reconciliation test files
+rtfile('rec_building.ttl', 'rec_building_out.ttl').
 
-test(test02_basic_with_bnode) :-
-    rdf_equal(Test, qaint:test),
-    rdf_equal(Expected, qaint:expected),
-    rdf_equal(Out, qaint:out),
-    load_file(data('basic_bnode.ttl'), Test),
-    load_file(data('basic_bnode_out.ttl'), Expected),
-    foreach(entail(S, P, O, Test), call(rdf_assert, S, P, O, Out)),
-    (
-        findall(rdf(S,P,O), rdf(S, P, O, Expected), ExpGraph),
-        findall(rdf(S,P,O), rdf(S, P, O, Out), OutGraph),
-        rdf_equal_graphs(ExpGraph, OutGraph, _) ->
-            true ;
-            output_graphs(Expected, Out)
-    ).
+init_rec :-
+    init_ont,
+    load_file(data('dummy_entities1.ttl'), qaint:'entities1'),
+    load_file(data('dummy_entities2.ttl'), qaint:'entities2'),
+    rdf_equal(Catalogue, qacatalog:''),
+    rdf_assert(qaint:'testera', qacatalog:hasEntityGraph, qaint:'entities1', Catalogue),
+    rdf_assert(qaint:'testerb', qacatalog:hasEntityGraph, qaint:'entities2', Catalogue).
 
-output_graphs(Expected, Received) :-
-    write('Expected:'),
-    rdf_save_canonical_turtle(stream(user_output), [graph(Expected)]),
-    write('Received:'),
-    rdf_save_canonical_turtle(stream(user_output), [graph(Received)]),
-    !, fail.
+test(reconciliation, [
+        setup(init_rec),
+        cleanup(rdf_reset_db),
+        forall(rtfile(InFile, OutFile)) ]) :-
+    run_rec_test(InFile, OutFile).
 
 :- end_tests(reconciliation).
+
+run_rec_test(InFile, OutFile) :-
+    assertion(atom(InFile)),
+    assertion(atom(OutFile)),
+    rdf_equal(Test, qaint:test),
+    rdf_equal(Expected, qaint:expected),
+    rdf_equal(Out, qaint:out),
+    rdf_equal(ReconciledTo, qaat:reconciledTo),
+    write('post 1'),
+    load_file(data(InFile), Test),
+    write('post 2'),
+    load_file(data(OutFile), Expected),
+    write('post 3\n'),
+    format('~w~n', [Out]),
+    foreach(reconciled_to(PE, B, Test), call(rdf_assert, PE, ReconciledTo, B, Out)),
+    write('post 4'),
+    foreach(rdf(S,P,O,Test), call(rdf_assert, S, P, O, Out)),
+    write('post 5'),
+    (
+        findall(rdf(S,P,O), rdf(S, P, O, Expected), ExpGraph),
+        findall(rdf(S,P,O), rdf(S, P, O, Out), OutGraph),
+        rdf_equal_graphs(ExpGraph, OutGraph, _) ->
+            true ;
+            output_graphs(Expected, Out)
+    ).
 
 % Setup predicates
 load_ont :-
     rdf_load(test('Qldarch.ttl'), [graph('http://qldarch.net/ns/rdf/2012-06/terms#')]).
-%    rdf_load('test/Qldarch/Qldarch.ttl', [graph('http://qldarch.net/ns/rdf/2012-06/terms#')]).
+
+% Utility to dump erroneous graphs to user_output
+output_graphs(Expected, Received) :-
+    writef('Expected:\n'),
+    rdf_save_turtle(stream(user_output), [graph(Expected)]),
+    writef('Received:\n'),
+    rdf_save_turtle(stream(user_output), [graph(Received)]),
+    !, fail.
 
 % Used during testing, but not at the moment.
 

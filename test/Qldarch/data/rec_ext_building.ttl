@@ -1,0 +1,30 @@
+@base <http://qldarch.net/omeka/items/show/> .
+
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix qaat: <http://qldarch.net/ns/omeka/2012-11/auxterms#> .
+@prefix qldarch: <http://qldarch.net/ns/rdf/2012-06/terms#> .
+
+<http://qldarch.net/omeka/items/show/100>
+    dcterms:created "2012-09"^^xsd:string ;
+    dcterms:title "Photo of Dummy Building no 1."^^xsd:string ;
+    a qldarch:DigitalObject, qldarch:Photograph .
+
+<http://qldarch.net/omeka/items/show/200>
+    dcterms:created "2012-09"^^xsd:string ;
+    dcterms:title "Photo of Dummy Building no 2."^^xsd:string ;
+    a qldarch:DigitalObject, qldarch:Photograph .
+
+<http://qldarch.net/ns/omeka/2012-11/pseudoentity#Project+Name,Dummy+Building+1>
+    qaat:label "Dummy Building 1"^^xsd:string ;
+    qaat:projectNameOf <http://qldarch.net/omeka/items/show/100> ;
+    qaat:pseudoEntityType "Project Name"^^xsd:string ;
+    a qaat:ProjectName, qaat:PseudoEntity .
+
+<http://qldarch.net/ns/omeka/2012-11/pseudoentity#Project+Name,Dummy+Building+2>
+    qaat:label "Dummy Building 2"^^xsd:string ;
+    qaat:projectNameOf <http://qldarch.net/omeka/items/show/200> ;
+    qaat:pseudoEntityType "Project Name"^^xsd:string ;
+    a qaat:ProjectName, qaat:PseudoEntity .

@@ -3,7 +3,9 @@
         is_subclass_of/2,
         is_resource_in_graph/2,
         load_file/2,
+        load_file/3,
         entail/4,
+        reconciled_to/3,
         do/1
     ]).
 :- use_module(library(semweb/rdf_db)).
@@ -25,8 +27,11 @@ This module provides qldarch ingest support.
     assertNormalizedStmt(o,o,o,+),
     entail(r,r,o,r),
     qldarch(o,o,o),
-    create_entity(r,+,r,+),
+    reconciled_to(r,r,r),
+    create_entity(r,r,r),
     is_subclass_of(r,r),
+    load_file(+,r),
+    load_file(+,r,r),
     is_resource_in_graph(r,r),
     instance_of(r,r,r).
 
@@ -34,6 +39,8 @@ This module provides qldarch ingest support.
 :- rdf_register_ns('qaat', 'http://qldarch.net/ns/omeka/2012-11/auxterms#').
 :- rdf_register_ns('qavocab', 'http://qldarch.net/ns/skos/2013-02/vocab#').
 :- rdf_register_ns('qaint', 'http://qldarch.net/ns/rdf/2013-08/internal#').
+:- rdf_register_ns('qaomeka', 'http://qldarch.net/omeka/items/show/').
+:- rdf_register_ns('qacatalog', 'http://qldarch.net/ns/rdf/2013-09/catalog#').
 :- rdf_register_ns('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#').
 :- rdf_register_ns('rdfs', 'http://www.w3.org/2000/01/rdf-schema#').
 :- rdf_register_ns('owl', 'http://www.w3.org/2002/07/owl#').
@@ -101,7 +108,11 @@ baseURI(BaseURI) :-
     format(atom(BaseURI), TempURIFormat, [Year, Month, Day, Hour, Minute, Sec, Sub]).
 
 load_file(Filename, Graph) :-
-    rdf_db:rdf_load(Filename, [graph(Graph)]).
+    load_file(Filename, Graph, _).
+
+load_file(Filename, Graph, BaseURI) :-
+    ( atom(BaseURI) ; rdf_equal(BaseURI, qaomeka:'') ),
+    rdf_db:rdf_load(Filename, [graph(Graph), base_uri(BaseURI)]).
 
 cleanGraph(In, Clean) :-
     foreach(clean(S, P, O, In), call(assertNormalizedStmt, S, P, O, Clean)).
@@ -154,14 +165,17 @@ entail(S, RdfType, C, G) :-
     instance_of(S, C, G),
     \+ rdf(S, rdf:type, C, G).
 
+% NOT SURE ABOUT THIS ONE.
+% Now we have Portraits and Biographies, can we so easily make the assumption
+% all interviewees are Architects.
 % { ?p a foaf:Person .
 %   [ qldarch:interviewee ?p ] . 
 %   } => { ?p a qldarch:Architect} .
-entail(Person, RdfType, Architect, G) :-
-    rdf_equal(RdfType, rdf:type),
-    rdf_equal(Architect, qldarch:'Architect'),
-    rdf(_, qldarch:interviewee, Person, G),
-    entail(Person, rdf:type, foaf:'Person').
+%entail(Person, RdfType, Architect, G) :-
+%    rdf_equal(RdfType, rdf:type),
+%    rdf_equal(Architect, qldarch:'Architect'),
+%    rdf(_, qldarch:interviewee, Person, G),
+%    entail(Person, rdf:type, foaf:'Person').
 
 %   {
 %      ?interview a qldarch:Interview ;
@@ -190,23 +204,22 @@ entail(S, DepictsBuilding, Building, G) :-
     rdf(PE, qaat:projectNameOf, S).
 
 convert_item_to_URI(Item, ItemURI) :-
-    Item = literal(atom(V)), !,
+    (   Item = literal(atom(V)) ;
+        Item = literal(type(_,V))
+    ), !,
     debug(qaconvert, 'Found atom item: ~w', Item),
     sub_atom(V, Before, _, After, 'admin/'),
     sub_atom(V, 0, Before, _, Prefix),
     sub_atom(V, _, After, 0, Suffix),
     atom_concat(Prefix, Suffix, ItemURI), !.
 
-convert_item_to_URI(Item, ItemURI) :-
-    Item = literal(type(_,V)), !,
-    debug(qaconvert, 'Found typed item: ~w', Item),
-    sub_atom(V, Before, _, After, 'admin/'),
-    sub_atom(V, 0, Before, _, Prefix),
-    sub_atom(V, _, After, 0, Suffix),
-    atom_concat(Prefix, Suffix, ItemURI), !.
-
 convert_item_to_URI(Item, _) :-
-    debug(qaconvert, 'Found item: ~w', Item), fail.
+    debug(qaconvert, 'Found unconvertable item: ~w', Item), fail.
+
+%   Shortcircuit reconcilation if we have memoized it previously.
+reconciled_to(PseudoEntity, Entity, G) :-
+    atom(PseudoEntity), atom(Entity),
+    rdf(PseudoEntity, qaat:reconciledTo, Entity, G), !.
 
 %   { ?e a qaat:ProjectName .
 %     ?e qaat:label ?l .
@@ -214,14 +227,20 @@ convert_item_to_URI(Item, _) :-
 %     ?building qldarch:label ?buildinglabel .
 %     ?l str:equalIgnoringCase ?buildinglabel .
 %   } => { ?e qaat:reconciledTo ?building } . 
-reconciledTo(PseudoEntity, Building, G) :-
+reconciled_to(PseudoEntity, Building, G) :-
+    rdf_equal(Catalogue, qacatalog:''),
     instance_of(PseudoEntity, qaat:'ProjectName', G),
     rdf(PseudoEntity, qaat:label, Label, G),
     (Label = literal(atom(Value)) ; Label = literal(type(_, Value))),
-% !!! This may not work, need to query multiple graphs
-    (   rdf(Building, qldarch:label, literal(exact(Value), _))
-    ;   create_entity(qldarch:'Structure', Building, G),
-        rdf_assert(Building, qldarch:label, Label, G)
+    % Search the ingest graph, and all entity-graphs registered in the catalogue
+    (   EntityGraph = G ;
+        rdf(_, qacatalog:hasEntityGraph, EntityGraph, Catalogue)
+    ),
+    (   rdf(Building, qldarch:label, literal(exact(Value), _), EntityGraph) ->
+        true ;
+        (   create_entity(qldarch:'Structure', Building, G),
+            rdf_assert(Building, qldarch:label, Label, G)
+        )
     ).
 
 %   { ?e a qaat:DrawingType .

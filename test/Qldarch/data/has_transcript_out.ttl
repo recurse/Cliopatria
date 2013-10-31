@@ -1,0 +1,24 @@
+@prefix     xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix     rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix qldarch: <http://qldarch.net/ns/rdf/2012-06/terms#> .
+@prefix    qaat: <http://qldarch.net/ns/omeka/2012-11/auxterms#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+
+<http://qldarch.net/omeka/items/show/1764>
+    a qldarch:DigitalObject ,
+      qldarch:DigitalThing ,
+      qldarch:Transcript ;
+    dcterms:created "2012-07-13"^^xsd:string ;
+    dcterms:description "Transcription of the interview with James Birrell"^^xsd:string ;
+    dcterms:title "James Birrell interview transcript"^^xsd:string ;
+    qldarch:hasFile <http://qldarch.net/omeka/items/show/../../files/show/1521> .
+
+<http://qldarch.net/omeka/items/show/8>
+    a qldarch:DigitalObject ,
+      qldarch:DigitalThing ,
+      qldarch:Interview ;
+    dcterms:title "James Birrell interview"^^xsd:string ;
+    qaat:transcriptItem "http://qldarch.net/omeka/admin/items/show/1764"^^xsd:string ;
+    qldarch:hasTranscript <http://qldarch.net/omeka/items/show/1764> ;
+    qldarch:transcriptLocation "http://qldarch.net/static/transcripts/birrell/Birrell.json"^^xsd:string .
+

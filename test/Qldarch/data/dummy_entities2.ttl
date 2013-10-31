@@ -1,0 +1,12 @@
+@prefix     xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix     rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix qldarch: <http://qldarch.net/ns/rdf/2012-06/terms#> .
+@prefix    qaat: <http://qldarch.net/ns/omeka/2012-11/auxterms#> .
+@prefix    qaint: <http://qldarch.net/ns/rdf/2013-08/internal#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+
+qaint:building2 a qldarch:Structure ;
+    qldarch:label "Dummy building 2"^^xsd:string.
+
+qaint:building4 a qldarch:Structure ;
+    qldarch:label "dummy building 4"^^xsd:string.
