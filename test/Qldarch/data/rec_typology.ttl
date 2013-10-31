@@ -12,12 +12,6 @@
     dcterms:title "Gladstone Civic Centre, 0001 Under construction - View from opposite side of Goondoon St."^^xsd:string ;
     a qldarch:DigitalObject, qldarch:Photograph .
 
-<http://qldarch.net/ns/omeka/2012-11/pseudoentity#Project+Name,Civic+Centre%2C+Gladstone>
-    qaat:label "Civic Centre, Gladstone"^^xsd:string ;
-    qaat:projectNameOf <http://qldarch.net/omeka/items/show/1710> ;
-    qaat:pseudoEntityType "Project Name"^^xsd:string ;
-    a qaat:ProjectName, qaat:PseudoEntity .
-
 <http://qldarch.net/ns/omeka/2012-11/pseudoentity#Building+Typology,Commercial+buildings>
     qaat:buildingTypologyOf <http://qldarch.net/omeka/items/show/1710> ;
     qaat:label "Commercial buildings"^^xsd:string ;

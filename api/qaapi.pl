@@ -1,9 +1,11 @@
 :- module(qaingest,
     [
         is_subclass_of/2,
+        is_subproperty_of/2,
         is_resource_in_graph/2,
         load_file/2,
         load_file/3,
+        load_file/4,
         entail/4,
         reconciled_to/3,
         do/1
@@ -30,8 +32,10 @@ This module provides qldarch ingest support.
     reconciled_to(r,r,r),
     create_entity(r,r,r),
     is_subclass_of(r,r),
+    is_subproperty_of(r,r),
     load_file(+,r),
     load_file(+,r,r),
+    load_file(+,r,r,+),
     is_resource_in_graph(r,r),
     instance_of(r,r,r).
 
@@ -111,8 +115,12 @@ load_file(Filename, Graph) :-
     load_file(Filename, Graph, _).
 
 load_file(Filename, Graph, BaseURI) :-
+    load_file(Filename, Graph, BaseURI, []).
+
+load_file(Filename, Graph, BaseURI, Options) :-
     ( atom(BaseURI) ; rdf_equal(BaseURI, qaomeka:'') ),
-    rdf_db:rdf_load(Filename, [graph(Graph), base_uri(BaseURI)]).
+    append(Options, [graph(Graph), base_uri(BaseURI)], ExtOptions),
+    rdf_db:rdf_load(Filename, ExtOptions).
 
 cleanGraph(In, Clean) :-
     foreach(clean(S, P, O, In), call(assertNormalizedStmt, S, P, O, Clean)).
@@ -221,34 +229,35 @@ reconciled_to(PseudoEntity, Entity, G) :-
     atom(PseudoEntity), atom(Entity),
     rdf(PseudoEntity, qaat:reconciledTo, Entity, G), !.
 
+reconciled_to(PseudoEntity, Building, G) :-
+    instance_of(PseudoEntity, qaat:'ProjectName', G),
+    reconciled_to_building(PseudoEntity, Building, G).
+
+reconciled_to(PseudoEntity, DrawingType, G) :-
+    instance_of(PseudoEntity, qaat:'DrawingType', G),
+    reconciled_to_drawing_type(PseudoEntity, DrawingType, G).
+
+reconciled_to(PseudoEntity, Firm, G) :-
+    instance_of(PseudoEntity, qaat:'Firm', G),
+    reconciled_to_firm(PseudoEntity, Firm, G).
+
 %   { ?e a qaat:ProjectName .
 %     ?e qaat:label ?l .
 %     ?building a qldarch:Structure .
 %     ?building qldarch:label ?buildinglabel .
 %     ?l str:equalIgnoringCase ?buildinglabel .
 %   } => { ?e qaat:reconciledTo ?building } . 
-reconciled_to(PseudoEntity, Building, G) :-
+reconciled_to_building(PseudoEntity, Building, G) :-
     atom(PseudoEntity),
-    rdf_equal(Catalogue, qacatalog:''),
     rdf(PseudoEntity, qaat:label, Label, G),
-    (Label = literal(atom(Value)) ; Label = literal(type(_, Value))),
-    % Search the ingest graph, and all entity-graphs registered in the catalogue
-    (   EntityGraph = G ;
-        rdf(_, qacatalog:hasEntityGraph, EntityGraph, Catalogue)
-    ),
+    label_value(Label, Value),
+    entity_graph(EntityGraph, G),
     (   rdf(Building, qldarch:label, literal(exact(Value), _), EntityGraph) ->
         true ;
         (   create_entity(qldarch:'Structure', Building, G),
             rdf_assert(Building, qldarch:label, Label, G)
         )
     ), !.
-
-reconciled_to(PseudoEntity, _, _) :-
-    nonvar(PseudoEntity), !, fail.
-
-reconciled_to(PseudoEntity, Building, G) :-
-    instance_of(PseudoEntity, qaat:'ProjectName', G),
-    reconciled_to(PseudoEntity, Building, G).
 
 %   { ?e a qaat:DrawingType .
 %     ?e qaat:label ?label .
@@ -257,34 +266,39 @@ reconciled_to(PseudoEntity, Building, G) :-
 %     ?type qldarch:label ?typelabel .
 %     ?label str:equalIgnoringCase ?typelabel .
 %   } => { ?e qaat:reconciledTo ?type } . 
-%reconciledTo(PseudoEntity, DrawingType, G) :-
-%    instance_of(PseudoEntity, qaat:'DrawingType', G),
-%    rdf(PseudoEntity, qaat:label, Label, G),
-%    qldarch(DrawingType, skos:inScheme qavocab:'DrawingType'), 
-%    instance_of(DrawingType, skos:Concept, G),
-%    qldarch(DrawingType, qldarch:label, TypeLabel),
-%    equal_insensitive(Label, TypeLabel).
-%
-%equal_insensitive(A, B) :-
-%    downcase_atom(A, DA),
-%    downcase_atom(B, DB),
-%    DA == DB.
+reconciled_to_drawing_type(PseudoEntity, DrawingType, G) :-
+    atom(PseudoEntity),
+    rdf(PseudoEntity, qaat:label, Label, G),
+    label_value(Label, Value),
+    qldarch(DrawingType, qldarch:label, literal(exact(Value), _)),
+    qldarch(DrawingType, skos:inScheme, qavocab:'DrawingTypes'),
+    instance_of(DrawingType, skos:'Concept', qldarch:''), !.
+
+%   { ?e a qaat:Firm .
+%     ?e qaat:label ?l .
+%     ?firm a qldarch:Firm .
+%     ?firm rdfs:label ?firmName .
+%     ?l str:equalIgnoringCase ?firmName .
+%   } => { ?e qaat:reconciledTo ?firm } .
+reconciled_to_firm(PseudoEntity, Firm, G) :-
+    atom(PseudoEntity),
+    rdf(PseudoEntity, qaat:label, Label, G),
+    label_value(Label, Value),
+    entity_graph(EntityGraph, G),
+    (   is_subproperty_of(Pred, rdfs:label),
+        rdf(Firm, Pred, literal(exact(Value), _), EntityGraph) ->
+        true ;
+        (   create_entity(qldarch:'Firm', Firm, G),
+            rdf_assert(Firm, qldarch:label, Label, G)
+        )
+    ), !.
 
 create_entity(Type, Entity, G) :-
     nonvar(G) ->
-%        rdf(BaseURI, rdf:type, qaat:'BaseURI', G),
-%       cnt(Category, N),
-%       atomic_list_concat([BaseURI, '/', Category, '#', N], Entity),
         rdf_bnode(Entity),
         rdf_assert(Entity, rdf:type, Type, G)
     ; throw(error(instantiation_error, _)).
         
-cnt(Category, N) :-
-    catch(nb_getval(Category, N), _, N = 0),
-    New is N + 1,
-    nb_setval(Category, New).
-
-
 instance_of(S, C, G) :-
     (nonvar(S) ; nonvar(C)), !,
     rdf(S, rdf:type, Class, G),
@@ -317,6 +331,30 @@ is_subclass_of(Sub, Super) :-
     ) ;
     qldarch(Sub, rdfs:subClassOf, Mid),
     is_subclass_of(Mid, Super).
+
+is_subproperty_of(Sub, Super) :-
+    nonvar(Sub), nonvar(Super),
+    Sub=Super, !.
+
+is_subproperty_of(Sub, Super) :-
+    Sub=Super.
+
+is_subproperty_of(Sub, Super) :-
+    (nonvar(Sub), nonvar(Super)) ->
+    qldarch(Sub, rdfs:subPropertyOf, Super), !.
+
+%   {?C rdfs:subClassOf ?D. ?D rdfs:subClassOf ?E} => {?C rdfs:subClassOf ?E}.
+is_subproperty_of(Sub, Super) :-
+    (nonvar(Sub) ->
+        qldarch(Sub, rdfs:subPropertyOf, Mid),
+        is_subproperty_of(Mid, Super), !
+    ) ;
+    (nonvar(Super) ->
+        qldarch(Mid, rdfs:subPropertyOf, Super),
+        is_subproperty_of(Sub, Mid), !
+    ) ;
+    qldarch(Sub, rdfs:subPropertyOf, Mid),
+    is_subproperty_of(Mid, Super).
 
 qldarch(S, P, O) :-
     rdf(S, P, O, 'http://qldarch.net/ns/rdf/2012-06/terms#').
@@ -361,3 +399,19 @@ is_predicate_in_graph(P, G) :-
 is_object_in_graph(O, G) :-
     rdf(_, _, O, G),
     rdf_is_resource(O).
+
+entity_graph(EntityGraph, Default) :-
+    EntityGraph = Default.
+
+entity_graph(EntityGraph, _) :-
+    rdf_equal(Catalogue, qacatalog:''),
+    rdf(_, qacatalog:hasEntityGraph, EntityGraph, Catalogue).
+    
+label_value(literal(atom(Label)), Value) :-
+    Label = Value.
+
+label_value(literal(type(_, Label)), Value) :-
+    Label = Value.
+
+label_value(literal(lang(_, Label)), Value) :-
+    Label = Value.
