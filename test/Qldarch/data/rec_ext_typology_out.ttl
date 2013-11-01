@@ -1,0 +1,34 @@
+@prefix     xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix     rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix   qaint: <http://qldarch.net/ns/rdf/2013-08/internal#> .
+@prefix qldarch: <http://qldarch.net/ns/rdf/2012-06/terms#> .
+@prefix    qaat: <http://qldarch.net/ns/omeka/2012-11/auxterms#> .
+
+# Named toplevel resources (3)
+
+<http://qldarch.net/ns/omeka/2012-11/pseudoentity#Building+Typology,Commercial+Buildings>
+    a qaat:BuildingTypology ,
+      qaat:PseudoEntity ;
+    qaat:buildingTypologyOf <http://qldarch.net/omeka/items/show/17> ;
+    qaat:label "Commercial Buildings" ;
+    qaat:pseudoEntityType "Building Typology"^^xsd:string ;
+    qaat:reconciledTo qaint:commercial .
+
+<http://qldarch.net/ns/omeka/2012-11/pseudoentity#Building+Typology,Dwellings>
+    a qaat:BuildingTypology ,
+      qaat:PseudoEntity ;
+    qaat:buildingTypologyOf <http://qldarch.net/omeka/items/show/18> ;
+    qaat:label "Dwellings" ;
+    qaat:pseudoEntityType "Building Typology"^^xsd:string ;
+    qaat:reconciledTo qaint:dwellings .
+
+<http://qldarch.net/ns/omeka/2012-11/pseudoentity#Building+Typology,Recreation+and+sports+facilities>
+    a qaat:BuildingTypology ,
+      qaat:PseudoEntity ;
+    qaat:buildingTypologyOf <http://qldarch.net/omeka/items/show/18> ;
+    qaat:label "Recreation and sports facilities" ;
+    qaat:pseudoEntityType "Building Typology"^^xsd:string ;
+    qaat:reconciledTo [ a qldarch:BuildingTypology ;
+                qldarch:label "Recreation and sports facilities"
+              ] .
+

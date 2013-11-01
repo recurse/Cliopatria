@@ -2,6 +2,7 @@
 @prefix     rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix qldarch: <http://qldarch.net/ns/rdf/2012-06/terms#> .
 @prefix    qaat: <http://qldarch.net/ns/omeka/2012-11/auxterms#> .
+@prefix    qaint: <http://qldarch.net/ns/rdf/2013-08/internal#> .
 @prefix dcterms: <http://purl.org/dc/terms/> .
 
 # Named toplevel resources (4)
@@ -12,9 +13,7 @@
     qaat:label "Dummy Building 1"^^xsd:string ;
     qaat:projectNameOf <http://qldarch.net/omeka/items/show/100> ;
     qaat:pseudoEntityType "Project Name"^^xsd:string ;
-    qaat:reconciledTo [ a qldarch:Structure ;
-                qldarch:label "Dummy Building 1"^^xsd:string
-              ] .
+    qaat:reconciledTo qaint:building1 .
 
 <http://qldarch.net/ns/omeka/2012-11/pseudoentity#Project+Name,Dummy+Building+2>
     a qaat:ProjectName ,
@@ -22,9 +21,7 @@
     qaat:label "Dummy Building 2"^^xsd:string ;
     qaat:projectNameOf <http://qldarch.net/omeka/items/show/200> ;
     qaat:pseudoEntityType "Project Name"^^xsd:string ;
-    qaat:reconciledTo [ a qldarch:Structure ;
-                qldarch:label "Dummy Building 2"^^xsd:string
-              ] .
+    qaat:reconciledTo qaint:building2 .
 
 <http://qldarch.net/omeka/items/show/100>
     a qldarch:DigitalObject ,

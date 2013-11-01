@@ -8,6 +8,7 @@
         load_file/4,
         entail/4,
         reconciled_to/3,
+        atom_split/4,
         do/1
     ]).
 :- use_module(library(semweb/rdf_db)).
@@ -88,9 +89,15 @@ ingest(Filename, Graph) :-
     cleanGraph(LoadGraph, CleanGraph),
     readGraph(CleanGraph, Graph).
 
-%%  atom_split(+In, +Sep, -Head, -Tail)
+%%  atom_split(+In, +Sep, -Head, -Tail) is det
 %
 %   Split the atom In 2 on the first occurance of Sep
+atom_split_first(In, Sep, Head, Tail) :-
+    atom_split(In, Sep, Head, Tail), !.
+
+%%  atom_split_first(+In, +Sep, -Head, -Tail) is nondet
+%
+%   Split the atom In 2 on the occurances of Sep
 atom_split(In, Sep, Head, Tail) :-
     atom_length(Sep, Length),
     sub_atom(In, B, Length, E, Sep),
@@ -108,7 +115,7 @@ baseURI(BaseURI) :-
     ),
     get_time(Timestamp),
     stamp_date_time(Timestamp, date(Year, Month, Day, Hour, Minute, Second, _, _, _), 'UTC'),
-    atom_split(Second, '.', Sec, Sub),
+    atom_split_first(Second, '.', Sec, Sub),
     format(atom(BaseURI), TempURIFormat, [Year, Month, Day, Hour, Minute, Sec, Sub]).
 
 load_file(Filename, Graph) :-
@@ -207,8 +214,7 @@ entail(Interview, HasTranscript, ItemURI, G) :-
 %   } => { ?s qldarch:depictsBuilding ?building } .
 entail(S, DepictsBuilding, Building, G) :-
     rdf_equal(DepictsBuilding, qldarch:depictsBuilding),
-    instance_of(PE, qaat:'ProjectName', G),
-    reconciledTo(PE, Building, G),
+    reconciled_to(PE, Building, G),
     rdf(PE, qaat:projectNameOf, S).
 
 convert_item_to_URI(Item, ItemURI) :-
@@ -225,9 +231,10 @@ convert_item_to_URI(Item, _) :-
     debug(qaconvert, 'Found unconvertable item: ~w', Item), fail.
 
 %   Shortcircuit reconcilation if we have memoized it previously.
-reconciled_to(PseudoEntity, Entity, G) :-
-    atom(PseudoEntity), atom(Entity),
-    rdf(PseudoEntity, qaat:reconciledTo, Entity, G), !.
+%   Do we want to do this, if so, memoize each reconciled_to method.
+%reconciled_to(PseudoEntity, Entity, G) :-
+%    atom(PseudoEntity), atom(Entity),
+%    rdf(PseudoEntity, qaat:reconciledTo, Entity, G), !.
 
 reconciled_to(PseudoEntity, Building, G) :-
     instance_of(PseudoEntity, qaat:'ProjectName', G),
@@ -241,6 +248,14 @@ reconciled_to(PseudoEntity, Firm, G) :-
     instance_of(PseudoEntity, qaat:'Firm', G),
     reconciled_to_firm(PseudoEntity, Firm, G).
 
+reconciled_to(PseudoEntity, Firm, G) :-
+    instance_of(PseudoEntity, qaat:'Person', G),
+    reconciled_to_person(PseudoEntity, Firm, G).
+
+reconciled_to(PseudoEntity, Typology, G) :-
+    instance_of(PseudoEntity, qaat:'BuildingTypology', G),
+    reconciled_to_typology(PseudoEntity, Typology, G).
+
 %   { ?e a qaat:ProjectName .
 %     ?e qaat:label ?l .
 %     ?building a qldarch:Structure .
@@ -251,9 +266,11 @@ reconciled_to_building(PseudoEntity, Building, G) :-
     atom(PseudoEntity),
     rdf(PseudoEntity, qaat:label, Label, G),
     label_value(Label, Value),
-    entity_graph(EntityGraph, G),
-    (   rdf(Building, qldarch:label, literal(exact(Value), _), EntityGraph) ->
-        true ;
+    (   
+        (   entity_graph(EntityGraph, G),
+            rdf(Building, qldarch:label, literal(exact(Value), _), EntityGraph),
+            instance_of(Building, qldarch:'Structure', EntityGraph)
+        ) -> true ;
         (   create_entity(qldarch:'Structure', Building, G),
             rdf_assert(Building, qldarch:label, Label, G)
         )
@@ -284,12 +301,74 @@ reconciled_to_firm(PseudoEntity, Firm, G) :-
     atom(PseudoEntity),
     rdf(PseudoEntity, qaat:label, Label, G),
     label_value(Label, Value),
-    entity_graph(EntityGraph, G),
-    (   is_subproperty_of(Pred, rdfs:label),
-        rdf(Firm, Pred, literal(exact(Value), _), EntityGraph) ->
-        true ;
+    (   
+        (   entity_graph(EntityGraph, G),
+            is_subproperty_of(Pred, rdfs:label),
+            rdf(Firm, Pred, literal(exact(Value), _FirmName), EntityGraph),
+            instance_of(Firm, qldarch:'Firm', EntityGraph)
+        ) -> true ;
         (   create_entity(qldarch:'Firm', Firm, G),
-            rdf_assert(Firm, qldarch:label, Label, G)
+            rdf_assert(Firm, qldarch:firmName, literal(type(xsd:string, Value)), G)
+        )
+    ), !.
+
+%   { ?e a qaat:Person .
+%     ?e qaat:label ?l .
+%     ?person a foaf:Person .
+%     ?person foaf:firstName ?fn .
+%     ?person foaf:lastName ?ln .
+%     ?l str:containsIgnoringCase ?fn .
+%     ?l str:containsIgnoringCase ?ln .
+%   } => { ?e qaat:reconciledTo ?person } .
+reconciled_to_person(PseudoEntity, Person, G) :-
+    atom(PseudoEntity),
+    rdf(PseudoEntity, qaat:label, Label, G),
+    label_value(Label, Value),
+    (
+        (   entity_graph(EntityGraph, G),
+            match_person_names(Value, Person, EntityGraph)
+        ) -> true ;
+        (   create_entity(foaf:'Person', Person, G),
+            % Assume the first space splits the full-name into first- and last-names
+            atom_split_first(Value, ' ', FirstName, LastName),
+            rdf_assert(Person, foaf:firstName, literal(type(xsd:string, FirstName)), G),
+            rdf_assert(Person, foaf:lastName, literal(type(xsd:string, LastName)), G)
+        )
+    ), !.
+
+match_person_names(FullName, Person, EntityGraph) :-
+    % Try various splits against foaf:firstName
+    atom_split(FullName, ' ', FNPrefix, _),
+    rdf(Person, foaf:firstName, literal(prefix(FNPrefix), FirstName), EntityGraph),
+    label_value(literal(FirstName), FNValue),
+    % The suffix of the fullname from the first-name + space is the last-name
+    atom_length(FNValue, FNLength),
+    FNSLength is FNLength + 1,
+    sub_atom(FullName, FNSLength, _, 0, LastName),
+    %    atom_split(FullName, FNSPrefix, _, LastName),
+    rdf(Person, foaf:lastName, literal(exact(LastName), _), EntityGraph),
+    % Domain and Range should ensure this, but double check anyway as Firms and People
+    % sometimes share names
+    instance_of(Person, foaf:'Person', EntityGraph),
+    !.
+
+%   { ?e a qaat:BuildingTypology .
+%     ?e qaat:label ?label .
+%     ?type a qldarch:BuildingTypology .
+%     ?type qldarch:label ?typelabel .
+%     ?label str:equalIgnoringCase ?typelabel .
+%   } => { ?e qaat:reconciledTo ?type } .
+reconciled_to_typology(PseudoEntity, Typology, G) :-
+    atom(PseudoEntity),
+    rdf(PseudoEntity, qaat:label, Label, G),
+    label_value(Label, Value),
+    (   
+        (   entity_graph(EntityGraph, G),
+            rdf(Typology, qldarch:label, literal(exact(Value), _), EntityGraph),
+            instance_of(Typology, qldarch:'BuildingTypology', EntityGraph)
+        ) -> true ;
+        (   create_entity(qldarch:'BuildingTypology', Typology, G),
+            rdf_assert(Typology, qldarch:label, Label, G)
         )
     ), !.
 
@@ -345,16 +424,18 @@ is_subproperty_of(Sub, Super) :-
 
 %   {?C rdfs:subClassOf ?D. ?D rdfs:subClassOf ?E} => {?C rdfs:subClassOf ?E}.
 is_subproperty_of(Sub, Super) :-
-    (nonvar(Sub) ->
+    (nonvar(Sub) *->
         qldarch(Sub, rdfs:subPropertyOf, Mid),
-        is_subproperty_of(Mid, Super), !
+        is_subproperty_of(Mid, Super)
     ) ;
-    (nonvar(Super) ->
+    (nonvar(Super) *->
         qldarch(Mid, rdfs:subPropertyOf, Super),
-        is_subproperty_of(Sub, Mid), !
+        is_subproperty_of(Sub, Mid)
     ) ;
-    qldarch(Sub, rdfs:subPropertyOf, Mid),
-    is_subproperty_of(Mid, Super).
+    (
+        qldarch(Sub, rdfs:subPropertyOf, Mid),
+        is_subproperty_of(Mid, Super)
+    ).
 
 qldarch(S, P, O) :-
     rdf(S, P, O, 'http://qldarch.net/ns/rdf/2012-06/terms#').
@@ -403,15 +484,17 @@ is_object_in_graph(O, G) :-
 entity_graph(EntityGraph, Default) :-
     EntityGraph = Default.
 
-entity_graph(EntityGraph, _) :-
+entity_graph(EntityGraph, _Default) :-
     rdf_equal(Catalogue, qacatalog:''),
     rdf(_, qacatalog:hasEntityGraph, EntityGraph, Catalogue).
     
-label_value(literal(atom(Label)), Value) :-
-    Label = Value.
-
 label_value(literal(type(_, Label)), Value) :-
     Label = Value.
 
 label_value(literal(lang(_, Label)), Value) :-
     Label = Value.
+
+label_value(literal(Label), Value) :-
+    atom(Label),
+    Label = Value.
+

@@ -384,6 +384,7 @@ foaf:gender a owl:ObjectProperty ;
     rdfs:domain :FirmManifestation .
 
 :firmName a owl:DatatypeProperty ;
+    rdfs:subPropertyOf :label ;
     a :SummaryProperty ;
     :label "Firm Name" ;
     :display true ;

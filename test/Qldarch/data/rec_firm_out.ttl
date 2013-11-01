@@ -12,7 +12,7 @@
     qaat:pseudoEntityType "Firm"^^xsd:string ;
     a qaat:Firm, qaat:PseudoEntity ;
     qaat:reconciledTo [ a qldarch:Firm ;
-                qldarch:label "Firm 1"^^xsd:string
+                qldarch:firmName "Firm 1"^^xsd:string
               ] .
 
 <http://qldarch.net/ns/omeka/2012-11/pseudoentity#Firm,Firm+2>
@@ -20,5 +20,5 @@
     qaat:pseudoEntityType "Firm"^^xsd:string ;
     a qaat:Firm, qaat:PseudoEntity ;
     qaat:reconciledTo [ a qldarch:Firm ;
-                qldarch:label "Firm 2"^^xsd:string
+                qldarch:firmName "Firm 2"^^xsd:string
               ] .

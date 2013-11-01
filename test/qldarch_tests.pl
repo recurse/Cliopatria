@@ -74,6 +74,16 @@ test(all_subclasses) :-
     findall(sc(X,Y), is_subclass_of(X, Y), List),
     forall(member(sc(X,Y), List), is_subclass_of(X, Y)).
 
+test(indirect_subproperty) :-
+    is_subproperty_of(qldarch:firmName, rdfs:label).
+
+test(direct_subproperty_query, [ set(X == [
+            'http://www.w3.org/2000/01/rdf-schema#label',
+            'http://qldarch.net/ns/rdf/2012-06/terms#label',
+            'http://qldarch.net/ns/rdf/2012-06/terms#plural',
+            'http://qldarch.net/ns/rdf/2012-06/terms#firmName' ])]) :-
+    is_subproperty_of(X, rdfs:label).
+
 :- end_tests(qldarch).
 
 :- begin_tests(entailment, [
@@ -85,6 +95,7 @@ test(all_subclasses) :-
 etfile('basic.ttl', 'basic_out.ttl').
 etfile('basic_bnode.ttl', 'basic_bnode_out.ttl').
 etfile('has_transcript.ttl', 'has_transcript_out.ttl').
+etfile('depicts_building.ttl', 'depicts_building_out.ttl').
 
 test(entailment, [
         setup(init_ont),
@@ -98,6 +109,7 @@ test(entailment, [
     load_file(data(InFile), Test, _, [silent(true)]),
     load_file(data(OutFile), Expected, _, [silent(true)]),
     foreach(entail(S, P, O, Test), call(rdf_assert, S, P, O, Out)),
+    foreach(rdf(S, P, O, Test), call(rdf_assert, S, P, O, Out)),
     (
         findall(rdf(S,P,O), rdf(S, P, O, Expected), ExpGraph),
         findall(rdf(S,P,O), rdf(S, P, O, Out), OutGraph),
@@ -126,7 +138,10 @@ rtfile('rec_building.ttl', 'rec_building_out.ttl').
 rtfile('rec_ext_building.ttl', 'rec_ext_building_out.ttl').
 rtfile('rec_drawingtype.ttl', 'rec_drawingtype_out.ttl').
 rtfile('rec_firm.ttl', 'rec_firm_out.ttl').
-%rtfile('rec_ext_firm.ttl', 'rec_ext_firm_out.ttl').
+rtfile('rec_ext_firm.ttl', 'rec_ext_firm_out.ttl').
+rtfile('rec_person.ttl', 'rec_person_out.ttl').
+rtfile('rec_ext_person.ttl', 'rec_ext_person_out.ttl').
+rtfile('rec_ext_typology.ttl', 'rec_ext_typology_out.ttl').
 
 test(reconciliation, [
         setup(init_rec),

@@ -4,9 +4,23 @@
 @prefix    qaat: <http://qldarch.net/ns/omeka/2012-11/auxterms#> .
 @prefix    qaint: <http://qldarch.net/ns/rdf/2013-08/internal#> .
 @prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix foaf:    <http://xmlns.com/foaf/0.1/> .
 
 qaint:building2 a qldarch:Structure ;
     qldarch:label "Dummy building 2"^^xsd:string.
 
 qaint:building4 a qldarch:Structure ;
     qldarch:label "dummy building 4"^^xsd:string.
+
+qaint:firm2 a qldarch:Firm ;
+    qldarch:firmName "Dummy firm 2"^^xsd:string.
+
+qaint:firm4 a qldarch:Firm ;
+    qldarch:firmName "dummy Firm 4"^^xsd:string.
+
+qaint:deborahvan a foaf:Person ;
+    foaf:firstName "Deborah Van"^^xsd:string ;
+    foaf:lastName "der Plaat"^^xsd:string.
+
+qaint:commercial a qldarch:BuildingTypology ;
+    qldarch:label "Commercial buildings" .

@@ -1,0 +1,22 @@
+@prefix     xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix     rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix qldarch: <http://qldarch.net/ns/rdf/2012-06/terms#> .
+@prefix    qaat: <http://qldarch.net/ns/omeka/2012-11/auxterms#> .
+@prefix    qaint: <http://qldarch.net/ns/rdf/2013-08/internal#> .
+
+# Named toplevel resources (2)
+
+<http://qldarch.net/ns/omeka/2012-11/pseudoentity#Firm,Dummy+Firm+1>
+    a qaat:Firm ,
+      qaat:PseudoEntity ;
+    qaat:label "Dummy Firm 1"^^xsd:string ;
+    qaat:pseudoEntityType "Firm"^^xsd:string ;
+    qaat:reconciledTo qaint:firm1 .
+
+<http://qldarch.net/ns/omeka/2012-11/pseudoentity#Firm,Dummy+Firm+2>
+    a qaat:Firm ,
+      qaat:PseudoEntity ;
+    qaat:label "Dummy firm 2"^^xsd:string ;
+    qaat:pseudoEntityType "Firm"^^xsd:string ;
+    qaat:reconciledTo qaint:firm2 .
+
