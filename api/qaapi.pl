@@ -161,8 +161,13 @@ clean(S, P, O, G) :-
         instance_of(S, qldarch:'Evincible', G)
     ).
 
+% FIXME: TESTS REQUIRED
 entail(S, P, O, G) :-
-    rdf(S, P, O, G).
+    rdf(S, P, O, G) ->
+    true ;
+    (   owl_inverse_of(P, IP),
+        rdf(O, IP, S)
+    ).
 
 %   {?P a owl:SymmetricProperty. ?S ?P ?O} => {?O ?P ?S}.
 %entail(S, P, O, G) :-
@@ -179,17 +184,6 @@ entail(S, RdfType, C, G) :-
     rdf_equal(RdfType, rdf:type),
     instance_of(S, C, G),
     \+ rdf(S, rdf:type, C, G).
-
-% NOTE: If we ever interview anyone who isn't an Architect we can no longer make
-%   this assumption.
-% { ?p a foaf:Person .
-%   [ qldarch:interviewee ?p ] . 
-%   } => { ?p a qldarch:Architect} .
-%entail(Person, RdfType, Architect, G) :-
-%    rdf_equal(RdfType, rdf:type),
-%    rdf_equal(Architect, qldarch:'Architect'),
-%    rdf(_, qldarch:interviewee, Person, G),
-%    instance_of(Person, foaf:Person, G).
 
 %   {
 %      ?interview a qldarch:Interview ;
@@ -208,6 +202,22 @@ entail(Interview, HasTranscript, ItemURI, G) :-
     instance_of(Interview, qldarch:'Interview', G),
     convert_item_to_URI(TranscriptItem, ItemURI).
 
+entail(DigitalObject, QAPred, Entity, G) :-
+    % Moved body to avoid split predicate warning.
+    classification(DigitalObject, QAPred, Entity, G).
+
+% NOTE: If we ever interview anyone who isn't an Architect we can no longer make
+%   this assumption.
+% { ?p a foaf:Person .
+%   [ qldarch:interviewee ?p ] . 
+%   } => { ?p a qldarch:Architect} .
+%   FIXME: TESTS REQUIRED
+entail(Person, RdfType, Architect, G) :-
+    rdf_equal(RdfType, rdf:type),
+    rdf_equal(Architect, qldarch:'Architect'),
+    entail(_DigitalObject, qldarch:interviewee, Person, G),
+    instance_of(Person, foaf:'Person', G).
+
 %   { ?e qaat:reconciledTo ?person .
 %     ?do a qldarch:Interview .
 %       ?e qaat:interviewerIn ?do .
@@ -223,11 +233,35 @@ entail(Interview, HasTranscript, ItemURI, G) :-
 %   { ?e qaat:reconciledTo ?building .
 %     ?e qaat:projectNameOf ?s .
 %   } => { ?s qldarch:depictsBuilding ?building } .
-entail(DigitalObject, QAPred, Entity, G) :-
+%   { ?e qaat:reconciledTo ?person .
+%     ?do a qldarch:Transcript .
+%     ?e qaat:transcriberOf ?do .
+%   } => { ?do qldarch:transcriber ?person } .
+%   { ?e qaat:reconciledTo ?type .
+%     ?do a qldarch:DigitalObject .
+%     ?e qaat:buildingTypologyOf ?do .
+%     ?do qldarch:depictsBuilding ?building .
+%   } => { ?building qldarch:buildingTypology ?type } .
+%   { ?e a qaat:BuildingTypology .
+%     ?e qaat:reconciledTo ?type .
+%     ?e qaat:definiteMapIcon ?dicon .
+%     ?type a qldarch:BuildingTypology .
+%   } => { ?type qldarch:definiteMapIcon ?dicon } .
+%   { ?e a qaat:BuildingTypology .
+%     ?e qaat:reconciledTo ?type .
+%     ?e qaat:indefiniteMapIcon ?dicon .
+%     ?type a qldarch:BuildingTypology .
+%   } => { ?type qldarch:indefiniteMapIcon ?dicon } .
+%   { ?e qaat:reconciledTo ?firm .
+%     ?e qaat:contemporaryTo ?s .
+%   } => { ?s qldarch:associatedFirm ?firm } .
+classification(DigitalObject, QAPred, Entity, G) :-
     reconciled_to(PE, Entity, G), % Note: reconciled_to does instance_of check.
     predicate_pair(QAPred, QAATPred),
     rdf(PE, QAATPred, DigitalObject, G).
+    % Consider adding a domain check to the entailment.
 
+% FIXME: TESTS REQUIRED
 predicate_pair(QAPred, QAATPred) :-
     rdf_equal(QAPred, qldarch:interviewee),
     rdf_equal(QAATPred, qaat:intervieweeIn).
@@ -237,12 +271,32 @@ predicate_pair(QAPred, QAATPred) :-
     rdf_equal(QAATPred, qaat:interviewerIn).
 
 predicate_pair(QAPred, QAATPred) :-
+    rdf_equal(QAPred, qldarch:transcriber),
+    rdf_equal(QAATPred, qaat:transcriberOf).
+
+predicate_pair(QAPred, QAATPred) :-
     rdf_equal(QAPred, dcterms:creator),
     rdf_equal(QAATPred, qaat:created).
 
 predicate_pair(QAPred, QAATPred) :-
     rdf_equal(QAPred, qldarch:depictsBuilding),
     rdf_equal(QAATPred, qaat:projectNameOf).
+
+predicate_pair(QAPred, QAATPred) :-
+    rdf_equal(QAPred, qldarch:buildingTypology),
+    rdf_equal(QAATPred, qaat:buildingTypologyOf).
+
+predicate_pair(QAPred, QAATPred) :-
+    rdf_equal(QAPred, qldarch:definiteMapIcon),
+    rdf_equal(QAATPred, qaat:definiteMapIcon).
+
+predicate_pair(QAPred, QAATPred) :-
+    rdf_equal(QAPred, qldarch:indefiniteMapIcon),
+    rdf_equal(QAATPred, qaat:indefiniteMapIcon).
+
+predicate_pair(QAPred, QAATPred) :-
+    rdf_equal(QAPred, qldarch:associatedFirm),
+    rdf_equal(QAATPred, qaat:contemporaryTo).
 
 convert_item_to_URI(Item, ItemURI) :-
     (   Item = literal(atom(V)) ;
@@ -468,8 +522,25 @@ is_subproperty_of(Sub, Super) :-
         is_subproperty_of(Mid, Super)
     ).
 
+owl_inverse_of(Property, InverseProperty) :-
+    qldarch(Property, owl:inverseOf, InverseProperty) ->
+    true ;
+    qldarch(InverseProperty, owl:inverseOf, Property).
+
+domain(Predicate, Domain) :-
+    qldarch(Predicate, rdfs:domain, Domain).
+    
+range(Predicate, Range) :-
+    qldarch(Predicate, rdfs:range, Range).
+
 qldarch(S, P, O) :-
     rdf(S, P, O, 'http://qldarch.net/ns/rdf/2012-06/terms#').
+
+ontology('http://qldarch.net/ns/rdf/2012-06/terms#').
+
+ontology(S, P, O) :-
+    ontology(G),
+    rdf(S, P, O, G).
 
 is_resource_in_graph(R, G) :-
     nonvar(R), nonvar(G), !,
@@ -512,12 +583,15 @@ is_object_in_graph(O, G) :-
     rdf(_, _, O, G),
     rdf_is_resource(O).
 
+entity_graph(EntityGraph) :-
+    rdf_equal(Catalogue, qacatalog:''),
+    rdf(_, qacatalog:hasEntityGraph, EntityGraph, Catalogue).
+
 entity_graph(EntityGraph, Default) :-
     EntityGraph = Default.
 
 entity_graph(EntityGraph, _Default) :-
-    rdf_equal(Catalogue, qacatalog:''),
-    rdf(_, qacatalog:hasEntityGraph, EntityGraph, Catalogue).
+    entity_graph(EntityGraph).
     
 label_value(literal(type(_, Label)), Value) :-
     Label = Value.
