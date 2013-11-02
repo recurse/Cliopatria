@@ -7,34 +7,39 @@
 # Named toplevel resources (4)
 
 <http://qldarch.net/ns/omeka/2012-11/pseudoentity#Project+Name,Civic+Centre%2C+Gladstone>
-    a qaat:ProjectName ,
+    a qaat:AuxClass ,
+      qaat:ProjectName ,
       qaat:PseudoEntity ;
     qaat:label "Civic Centre, Gladstone"^^xsd:string ;
     qaat:projectNameOf <http://qldarch.net/omeka/items/show/1710> ;
-    qaat:pseudoEntityType "Project Name"^^xsd:string ;
-    qaat:reconciledTo [ a qldarch:Structure ;
-                qldarch:label "Civic Centre, Gladstone"^^xsd:string
-              ] .
+    qaat:pseudoEntityType "Project Name"^^xsd:string .
 
 <http://qldarch.net/ns/omeka/2012-11/pseudoentity#Project+Name,Dummy>
-    a qaat:ProjectName ,
+    a qaat:AuxClass ,
+      qaat:ProjectName ,
       qaat:PseudoEntity ;
     qaat:label "Dummy Project Name"^^xsd:string ;
     qaat:projectNameOf <http://qldarch.net/omeka/items/show/1810> ;
-    qaat:pseudoEntityType "Project Name"^^xsd:string ;
-    qaat:reconciledTo [ a qldarch:Structure ;
-                qldarch:label "Dummy Project Name"^^xsd:string
-              ] .
+    qaat:pseudoEntityType "Project Name"^^xsd:string .
 
 <http://qldarch.net/omeka/items/show/1710>
-    a qldarch:DigitalObject ,
-      qldarch:Photograph ;
+	a qldarch:DigitalObject ,
+	  qldarch:DigitalThing ,
+	  qldarch:Image ,
+	  qldarch:Photograph ;
     dcterms:created "2012-09"^^xsd:string ;
-    dcterms:title "Gladstone Civic Centre, 0001 Under construction - View from opposite side of Goondoon St."^^xsd:string .
+    dcterms:title "Gladstone Civic Centre, 0001 Under construction - View from opposite side of Goondoon St."^^xsd:string ;
+	qldarch:depictsBuilding [ a qldarch:Structure ;
+				  qldarch:label "Civic Centre, Gladstone"^^xsd:string
+				] .
 
 <http://qldarch.net/omeka/items/show/1810>
-    a qldarch:DigitalObject ,
-      qldarch:Photograph ;
+	a qldarch:DigitalObject ,
+	  qldarch:DigitalThing ,
+	  qldarch:Image ,
+	  qldarch:Photograph ;
     dcterms:created "2012-09"^^xsd:string ;
-    dcterms:title "Dummy Photograph"^^xsd:string .
-
+    dcterms:title "Dummy Photograph"^^xsd:string ;
+	qldarch:depictsBuilding [ a qldarch:Structure ;
+				  qldarch:label "Dummy Project Name"^^xsd:string
+				] .

@@ -180,9 +180,8 @@ entail(S, RdfType, C, G) :-
     instance_of(S, C, G),
     \+ rdf(S, rdf:type, C, G).
 
-% NOT SURE ABOUT THIS ONE.
-% Now we have Portraits and Biographies, can we so easily make the assumption
-% all interviewees are Architects.
+% NOTE: If we ever interview anyone who isn't an Architect we can no longer make
+%   this assumption.
 % { ?p a foaf:Person .
 %   [ qldarch:interviewee ?p ] . 
 %   } => { ?p a qldarch:Architect} .
@@ -190,7 +189,7 @@ entail(S, RdfType, C, G) :-
 %    rdf_equal(RdfType, rdf:type),
 %    rdf_equal(Architect, qldarch:'Architect'),
 %    rdf(_, qldarch:interviewee, Person, G),
-%    entail(Person, rdf:type, foaf:'Person').
+%    instance_of(Person, foaf:Person, G).
 
 %   {
 %      ?interview a qldarch:Interview ;
@@ -205,27 +204,59 @@ entail(S, RdfType, C, G) :-
 %    } .
 entail(Interview, HasTranscript, ItemURI, G) :-
     rdf_equal(HasTranscript, qldarch:hasTranscript),
-    instance_of(Interview, qldarch:'Interview', G),
     rdf(Interview, qaat:transcriptItem, TranscriptItem, G),
+    instance_of(Interview, qldarch:'Interview', G),
     convert_item_to_URI(TranscriptItem, ItemURI).
 
+%   { ?e qaat:reconciledTo ?person .
+%     ?do a qldarch:Interview .
+%       ?e qaat:interviewerIn ?do .
+%   } => { ?do qldarch:interviewer ?person } .
+%   { ?e qaat:reconciledTo ?person .
+%     ?do a qldarch:Interview .
+%       ?e qaat:intervieweeIn ?do .
+%   } => { ?do qldarch:interviewer ?person } .
+%   { ?e qaat:reconciledTo ?person .
+%     ?do a qldarch:DigitalObject .
+%     ?e qaat:created ?do .
+%   } => { ?do dcterms:creator ?person } .
 %   { ?e qaat:reconciledTo ?building .
 %     ?e qaat:projectNameOf ?s .
 %   } => { ?s qldarch:depictsBuilding ?building } .
-entail(S, DepictsBuilding, Building, G) :-
-    rdf_equal(DepictsBuilding, qldarch:depictsBuilding),
-    reconciled_to(PE, Building, G),
-    rdf(PE, qaat:projectNameOf, S).
+entail(DigitalObject, QAPred, Entity, G) :-
+    reconciled_to(PE, Entity, G), % Note: reconciled_to does instance_of check.
+    predicate_pair(QAPred, QAATPred),
+    rdf(PE, QAATPred, DigitalObject, G).
+
+predicate_pair(QAPred, QAATPred) :-
+    rdf_equal(QAPred, qldarch:interviewee),
+    rdf_equal(QAATPred, qaat:intervieweeIn).
+
+predicate_pair(QAPred, QAATPred) :-
+    rdf_equal(QAPred, qldarch:interviewer),
+    rdf_equal(QAATPred, qaat:interviewerIn).
+
+predicate_pair(QAPred, QAATPred) :-
+    rdf_equal(QAPred, dcterms:creator),
+    rdf_equal(QAATPred, qaat:created).
+
+predicate_pair(QAPred, QAATPred) :-
+    rdf_equal(QAPred, qldarch:depictsBuilding),
+    rdf_equal(QAATPred, qaat:projectNameOf).
 
 convert_item_to_URI(Item, ItemURI) :-
     (   Item = literal(atom(V)) ;
         Item = literal(type(_,V))
     ), !,
     debug(qaconvert, 'Found atom item: ~w', Item),
-    sub_atom(V, Before, _, After, 'admin/'),
-    sub_atom(V, 0, Before, _, Prefix),
-    sub_atom(V, _, After, 0, Suffix),
-    atom_concat(Prefix, Suffix, ItemURI), !.
+    (
+        sub_atom(V, Before, _, After, 'admin/') ->
+        (   sub_atom(V, 0, Before, _, Prefix),
+            sub_atom(V, _, After, 0, Suffix),
+            atom_concat(Prefix, Suffix, ItemURI)
+        ) ;
+        V = ItemURI
+    ), !.
 
 convert_item_to_URI(Item, _) :-
     debug(qaconvert, 'Found unconvertable item: ~w', Item), fail.

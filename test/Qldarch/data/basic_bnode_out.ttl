@@ -1,10 +1,23 @@
 @prefix qaat: <http://qldarch.net/ns/omeka/2012-11/auxterms#> .
 @prefix qaomeka: <http://qldarch.net/omeka/items/show/> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix qldarch: <http://qldarch.net/ns/rdf/2012-06/terms#> .
+
+# qaat:PseudoEntity obtained via subclass entailment.
 
 qaomeka:1 a qaat:BuildingTypology, qaat:PseudoEntity ;
   qaat:label "Commercial buildings" .
 
 _:2 a qaat:BuildingTypology, qaat:PseudoEntity ;
   qaat:label "Dwellings" .
+
+# Obtained via reconcilation entailment.
+
+[ a qldarch:BuildingTypology ;
+  qldarch:label "Dwellings"
+] .
+
+[ a qldarch:BuildingTypology ;
+  qldarch:label "Commercial buildings"
+] .
 

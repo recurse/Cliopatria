@@ -13,6 +13,15 @@
     dcterms:title "James Birrell interview transcript"^^xsd:string ;
     qldarch:hasFile <http://qldarch.net/omeka/items/show/../../files/show/1521> .
 
+<http://qldarch.net/omeka/items/show/1765>
+    a qldarch:DigitalObject ,
+      qldarch:DigitalThing ,
+      qldarch:Transcript ;
+    dcterms:created "2012-07-13"^^xsd:string ;
+    dcterms:description "Transcription of another interview with James Birrell"^^xsd:string ;
+    dcterms:title "Another Birrell interview transcript"^^xsd:string ;
+    qldarch:hasFile <http://qldarch.net/omeka/items/show/../../files/show/1522> .
+
 <http://qldarch.net/omeka/items/show/8>
     a qldarch:DigitalObject ,
       qldarch:DigitalThing ,
@@ -21,4 +30,13 @@
     qaat:transcriptItem "http://qldarch.net/omeka/admin/items/show/1764"^^xsd:string ;
     qldarch:hasTranscript <http://qldarch.net/omeka/items/show/1764> ;
     qldarch:transcriptLocation "http://qldarch.net/static/transcripts/birrell/Birrell.json"^^xsd:string .
+
+<http://qldarch.net/omeka/items/show/9>
+    a qldarch:DigitalObject ,
+      qldarch:DigitalThing ,
+      qldarch:Interview ;
+    dcterms:title "Another Birrell interview"^^xsd:string ;
+    qaat:transcriptItem "http://qldarch.net/omeka/items/show/1765"^^xsd:string ;
+    qldarch:hasTranscript <http://qldarch.net/omeka/items/show/1765> ;
+    qldarch:transcriptLocation "http://qldarch.net/static/transcripts/birrell/AnotherBirrell.json"^^xsd:string .
 

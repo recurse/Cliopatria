@@ -17,3 +17,16 @@
     dcterms:title "James Birrell interview transcript"^^xsd:string ;
     qldarch:hasFile <../../files/show/1521> ;
     a qldarch:DigitalObject, qldarch:Transcript .
+
+<http://qldarch.net/omeka/items/show/9>
+    dcterms:title "Another Birrell interview"^^xsd:string ;
+    qaat:transcriptItem "http://qldarch.net/omeka/items/show/1765"^^xsd:string ;
+    qldarch:transcriptLocation "http://qldarch.net/static/transcripts/birrell/AnotherBirrell.json"^^xsd:string ;
+    a qldarch:DigitalObject, qldarch:Interview .
+
+<http://qldarch.net/omeka/items/show/1765>
+    dcterms:created "2012-07-13"^^xsd:string ;
+    dcterms:description "Transcription of another interview with James Birrell"^^xsd:string ;
+    dcterms:title "Another Birrell interview transcript"^^xsd:string ;
+    qldarch:hasFile <../../files/show/1522> ;
+    a qldarch:DigitalObject, qldarch:Transcript .
