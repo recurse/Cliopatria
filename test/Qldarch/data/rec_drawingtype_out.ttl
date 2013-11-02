@@ -1,0 +1,19 @@
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix qaat: <http://qldarch.net/ns/omeka/2012-11/auxterms#> .
+@prefix qldarch: <http://qldarch.net/ns/rdf/2012-06/terms#> .
+@prefix qavocab: <http://qldarch.net/ns/skos/2013-02/vocab#> .
+
+<http://qldarch.net/omeka/2012-11/pseudoentity#Drawing+Type,Plan>
+    a qaat:DrawingType, qaat:PseudoEntity ;
+    qaat:label "Plan"^^xsd:string ;
+    qaat:pseudoEntityType "Drawing Type"^^xsd:string ;
+    qaat:reconciledTo qavocab:Plan ;
+    qaat:typedDrawing <http://qldarch.net/omeka/items/show/100> .
+
+<http://qldarch.net/omeka/items/show/100>
+    dcterms:title "Roma St Redevelopment, Roof level"^^xsd:string ;
+    a qldarch:DigitalObject, qldarch:LineDrawing .
+

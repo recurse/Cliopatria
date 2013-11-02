@@ -1,0 +1,25 @@
+@base <http://qldarch.net/omeka/items/show/> .
+
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix qaat: <http://qldarch.net/ns/omeka/2012-11/auxterms#> .
+@prefix qldarch: <http://qldarch.net/ns/rdf/2012-06/terms#> .
+
+<1710>
+    dcterms:created "2012-09"^^xsd:string ;
+    dcterms:title "Gladstone Civic Centre, 0001 Under construction - View from opposite side of Goondoon St."^^xsd:string ;
+    a qldarch:DigitalObject, qldarch:Photograph .
+
+<../../../ns/omeka/2012-11/pseudoentity#Project+Name,Civic+Centre%2C+Gladstone>
+    qaat:label "Civic Centre, Gladstone"^^xsd:string ;
+    qaat:projectNameOf <1710> ;
+    qaat:pseudoEntityType "Project Name"^^xsd:string ;
+    a qaat:ProjectName, qaat:PseudoEntity .
+
+<../../../ns/omeka/2012-11/pseudoentity#Building+Typology,Commercial+buildings>
+    qaat:buildingTypologyOf <1710> ;
+    qaat:label "Commercial buildings"^^xsd:string ;
+    qaat:pseudoEntityType "Building Typology"^^xsd:string ;
+    a qaat:BuildingTypology, qaat:PseudoEntity .

@@ -1,0 +1,1562 @@
+#
+# Ontology for an Oral History of Architecture
+# (c) eResearch Laboratory, School of ITEE, The University of Queensland
+# Licensed MIT
+#
+
+@prefix : <http://qldarch.net/ns/rdf/2012-06/terms#> .
+@prefix qldarch: <http://qldarch.net/ns/rdf/2012-06/terms#> .
+@prefix qaat: <http://qldarch.net/ns/omeka/2012-11/auxterms#> .
+@prefix qavocab: <http://qldarch.net/ns/skos/2013-02/vocab#> .
+@prefix qaint: <http://qldarch.net/ns/rdf/2013-08/internal#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix dcam: <http://purl.org/dc/dcam/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+@prefix frbr: <http://purl.org/vocab/frbr/core#> .
+@prefix crm: <http://www.cidoc-crm.org/cidoc-crm/> .
+
+##
+## PRELIMINARIES
+##
+
+#
+# OWL as RDFS header, redundant if using OWL, but allows OWL file to be used
+# within an RDFS reasoner unchanged.
+# 
+
+owl:Class rdfs:subClassOf rdfs:Class .
+
+owl:ObjectProperty rdfs:subClassOf rdf:Property .
+
+owl:DatatypeProperty rdfs:subClassOf rdf:Property ;
+    rdfs:domain rdfs:Resource ;
+    rdfs:range rdfs:Literal .
+
+:SummaryProperty rdfs:subClassOf rdf:Property ;
+    rdfs:comment "This is used to identify which proprties should be included in a entity summary" .
+
+##
+## INTERNAL ONTOLOGY
+##
+
+<http://qldarch.net/ns/rdf/2013-08/internal#> a owl:Ontology .
+
+#
+# Internal Ontology to allow prefixes to be queried.
+#
+
+qaint:usesPrefix a owl:DatatypeProperty ;
+    qldarch:label "Uses Well-Known Prefix" ;
+    rdfs:comment "Associates prefix URI with an @prefix string" .
+
+<http://qldarch.net/ns/rdf/2013-08/internal#> :usesPrefix "qaint" .
+<http://qldarch.net/ns/rdf/2012-06/terms#> :usesPrefix "qldarch" .
+<http://qldarch.net/ns/omeka/2012-11/auxterms#> :usesPrefix "qaat" .
+<http://qldarch.net/omeka/items/show/> :usesPrefix "qaomeka" .
+<http://qldarch.net/ns/skos/2013-02/vocab#> :usesPrefix "qavocab" .
+<http://www.w3.org/1999/02/22-rdf-syntax-ns#> :usesPrefix "rdf" .
+<http://www.w3.org/2000/01/rdf-schema#> :usesPrefix "rdfs" .
+<http://www.w3.org/2002/07/owl#> :usesPrefix "owl" .
+<http://www.w3.org/2001/XMLSchema#> :usesPrefix "xsd" .
+<http://purl.org/dc/terms/> :usesPrefix "dcterms" .
+<http://purl.org/dc/dcam/> :usesPrefix "dcam" .
+<http://xmlns.com/foaf/0.1/> :usesPrefix "foaf" .
+<http://www.w3.org/2004/02/skos/core#> :usesPrefix "skos" .
+<http://www.w3.org/2003/01/geo/wgs84_pos#> :usesPrefix "geo" .
+<http://purl.org/vocab/frbr/core#> :usesPrefix "frbr" .
+<http://www.cidoc-crm.org/cidoc-crm/> :usesPrefix "crm" .
+
+##
+## UPPER ONTOLOGY
+##
+
+<http://qldarch.net/ns/rdf/2012-06/terms#> a owl:Ontology .
+
+#
+# Application oriented Properties
+#
+
+:label a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :label "Preferred label" ;
+    rdfs:subPropertyOf rdfs:label ;
+    rdfs:comment "The preferred label for a thing" .
+
+:plural a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :display true ;
+    :editable true ;
+    rdfs:subPropertyOf :label ;
+    rdfs:comment "The plural form of the preferred label for a thing" .
+
+:singular a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :display true ;
+    :editable true ;
+#    rdfs:subPropertyOf :label ;  # NOTE: This should be restored asap.
+    rdfs:comment "The singular form of the preferred label for a thing" .
+
+:display a owl:DatatypeProperty ;
+    rdfs:comment "Used to indicate if a property should be displayed when displaying an instance" .
+
+:editable a owl:DatatypeProperty ;
+    rdfs:comment "Used to indicate if a property should be editable directly via the interface" .
+
+:toplevel a owl:DatatypeProperty ;
+    rdfs:domain owl:Class ;
+    rdfs:range xsd:boolean ;
+    rdfs:comment "Used to indicate class should be displayed when displaying an instance" .
+
+:displayPrecedence a owl:DatatypeProperty ;
+    rdfs:comment "Used to indicate the relative order the subject should be displayed in (smaller-first)" .
+
+:requiredToCreate a owl:ObjectProperty ;
+    rdfs:domain owl:Class ;
+    rdfs:range rdf:Property ;
+    rdfs:comment "Used to indicate that a property must be specified when creating an instance of this class" .
+
+#
+# External Classes
+#
+
+:Evincible a owl:Class ;
+    :editable false ;
+    :toplevel false ;
+    :label "Evincible Thing" ;
+    rdfs:comment "Top for Percian 'Firsts' and 'Thirds' related by this vocabularly" .
+
+:Entity a owl:Class ;
+    rdfs:subClassOf :Evincible ;
+    :editable false ;
+    :toplevel false ;
+    :label "Entity" ;
+    rdfs:comment "Top for Percian 'Firsts' related by this vocabularly" .
+    
+:Relationship a owl:Class ;
+    rdfs:subClassOf :Evincible ;
+    :editable false ;
+    :toplevel false ;
+    :plural "Relationships" ;
+    :singular "Relationship" ;
+    rdfs:comment "Top for Percian 'Thirds' related by this vocabularly" .
+
+:NonDigitalThing a owl:Class ;
+    :label "Non-Digital Thing" ;
+    rdfs:subClassOf :Entity .
+
+:DigitalThing a owl:Class ;
+    :label "Digital Thing" ;
+    rdfs:subClassOf :Entity .
+
+:DigitalObject a owl:Class ;
+    :label "Digital Object" ;
+    rdfs:subClassOf :DigitalThing ;
+    rdfs:subClassOf frbr:Expression ;
+    rdfs:comment "This is analagous to a digital expression of an FRBR work. For pragmatic reasons, and due to the fungability of digital forms, any transformation of a work from a non-digital to a digital manifestation is considered to create a new expression. This allows us to capture the concept of a digitized work that can be subsequently transcoded into multiple digital manifestations but remains conceptually a Representation of the same Digital Resource (Expression)" .
+
+:DigitalFile a owl:Class ;
+    :label "File" ;
+    rdfs:subClassOf :DigitalThing ;
+    rdfs:subClassOf frbr:Manifestation ;
+    rdfs:comment "This is analagous to a digital manifestation of an FRBR expression. The medium of a DigitalFile is 'bitstream' syntactically and lexigraphically encoded consistent with a RFC2046 mime-type" .
+
+:StructureOrAgentOrTopic a owl:Class ;
+    :label "Structure or Agent or Topic" ;
+    rdfs:subClassOf :NonDigitalThing .
+
+:StructureOrAgent a owl:Class ;
+    :label "Structure or Agent" ;
+    rdfs:subClassOf :StructureOrAgentOrTopic .
+
+:Structure a owl:Class ;
+    rdfs:subClassOf :StructureOrAgent ;
+    rdfs:subClassOf geo:SpatialThing ;
+    :displayPrecedence 2 ;
+    :editable true ;
+    :plural "Structures" ;
+    :singular "Structure" ;
+    :toplevel true ;
+    :requiredToCreate :label ;
+    :requiredToCreate :buildingTypology .
+
+:BuildingTypology a owl:Class ;
+    rdfs:subClassOf :NonDigitalThing ;
+    rdfs:subClassOf skos:Concept ;
+    :displayPrecedence 3 ;
+    :plural "Building Typologies" ;
+    :singular "Building Typologie" ;
+    :toplevel true .
+
+foaf:Agent a owl:Class ;
+    :singular "Agent" ;
+    :plural "Agents" ;
+    rdfs:isDefinedBy <http://http://xmlns.com/foaf/spec/#term_Agent> ;
+    rdfs:subClassOf :StructureOrAgent ;
+    rdfs:isDefinedBy foaf:Agent .
+
+foaf:Person a owl:Class ;
+    :label "Person" ;
+    :suppressEditable :label ;
+    rdfs:isDefinedBy <http://http://xmlns.com/foaf/spec/#term_Person> ;
+    rdfs:subClassOf foaf:Agent ;
+    rdfs:isDefinedBy foaf:Person .
+
+:Architect a owl:Class ;
+    rdfs:subClassOf foaf:Person ;
+    :suppressEditable :label ;
+    :displayPrecedence 0 ;
+    :plural "Architects" ;
+    :singular "Architect" ;
+    :editable true ;
+    :toplevel true ;
+    :requiredToCreate foaf:firstName ;
+    :requiredToCreate foaf:lastName .
+
+:Firm a owl:Class ;
+    rdfs:subClassOf foaf:Agent ;
+    :displayPrecedence 1 ;
+    :editable true ;
+    :plural "Firms" ;
+    :singular "Firm" ;
+    :toplevel true ;
+    :requiredToCreate :firmName .
+
+:FirmManifestation a owl:Class ;
+    rdfs:subClassOf foaf:Agent ;
+    :plural "Firm Manifestations" ;
+    :singular "Firm Manifestation" ;
+    :requiredToCreate :tradingName .
+
+:EducationalInstitution a owl:Class ;
+    rdfs:subClassOf foaf:Agent ;
+    :displayPrecedence 10 ;
+    :editable true ;
+    :plural "Educational Insitutions" ;
+    :singular "Educational Institution" ;
+    :toplevel false ;
+    :requiredToCreate foaf:name .
+
+:Article a owl:Class ;
+    rdfs:subClassOf :DigitalObject ;
+    :displayPrecedence 3 ;
+    :label "Articles" ;
+    :toplevel true .
+
+:Image a owl:Class ;
+    rdfs:subClassOf :DigitalObject ;
+    :label "Images" .
+
+:Photograph a owl:Class ;
+    rdfs:subClassOf :Image ;
+    :displayPrecedence 1 ;
+    :label "Photographs" ;
+    :toplevel true .
+
+:Portrait a owl:Class ;
+    rdfs:subClassOf :Photograph ;
+    :displayPrecedence 1 ;
+    :label "Photographs" ;
+    :toplevel false .
+
+:LineDrawing a owl:Class ;
+    rdfs:subClassOf :Image ;
+    :displayPrecedence 2 ;
+    :label "Line Drawings" ;
+    :toplevel true .
+
+:Interview a owl:Class ;
+    rdfs:subClassOf :DigitalObject ;
+    :displayPrecedence 0 ;
+    :label "Interviews" ;
+    :toplevel true .
+
+:Transcript a owl:Class ;
+    rdfs:subClassOf :DigitalObject ;
+    :label "Transcripts" ;
+    :toplevel false .
+
+:DrawingType a owl:Class ; 
+    :label "Drawing Type" ;
+    rdfs:subClassOf skos:Concept .
+
+:Topic a owl:Class ;
+    rdfs:subClassOf :Entity ;
+    rdfs:subClassOf skos:Concept ;
+    :label "Topic" ;
+    :editable true ;
+    :requiredToCreate :label ;
+    :toplevel false .
+
+geo:SpatialThing a owl:Class ;
+    :label "Spatial Thing" ;
+    :toplevel false ;
+    rdfs:isDefinedBy geo:SpatialThing .
+
+:Gender a owl:Class ; 
+    :label "Gender" ;
+    rdfs:subClassOf skos:Concept .
+
+#
+# External Ontology Properties
+#
+
+:prefLabel a owl:DatatypeProperty ;
+    :label "Known as" ;
+    :display true ;
+    :editable true ;
+    :displayPrecedence 100 ;
+    rdfs:comment "A preferred label for a thing" .
+
+rdfs:label a owl:DatatypeProperty ;
+    :label "Label" ;
+    :display false ;
+    :editable false ;
+    rdfs:comment "A label for a thing" .
+
+rdf:type a owl:ObjectProperty ;
+    :label "Type" ;
+    a :SummaryProperty ;
+    rdfs:comment "The type of a thing" ;
+    :display false ;
+    :editable false .
+
+foaf:name a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :label "Name" ;
+    :display true ;
+    :editable true ;
+    rdfs:domain foaf:Agent ;
+    rdfs:range xsd:string .
+
+foaf:firstName a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :label "First Name" ;
+    :display true ;
+    :editable true ;
+    :displayPrecedence 8 ;
+    rdfs:domain foaf:Person ;
+    rdfs:range xsd:string .
+
+foaf:lastName a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :label "Last Name" ;
+    :display true ;
+    :editable true ;
+    :displayPrecedence 9 ;
+    rdfs:domain foaf:Person ;
+    rdfs:range xsd:string .
+
+foaf:gender a owl:ObjectProperty ;
+    a :SummaryProperty ;
+    :label "Gender" ;
+    :display true ;
+    :editable true ;
+    :displayPrecedence 60 ;
+    rdfs:domain foaf:Person ;
+    rdfs:range :Gender .
+
+:birthYear a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :label "Born in Year" ;
+    :display true ;
+    :editable true ;
+    :displayPrecedence 50 ;
+    rdfs:domain foaf:Person .
+
+:shortBio a owl:DatatypeProperty ;
+    :label "Short Biography" ;
+    :display false ;
+    :editable true ;
+    :displayPrecedence 100 ;
+    rdfs:domain foaf:Agent .
+
+:tradingName a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :label "Traded As" ;
+    :display true ;
+    :editable true ;
+    rdfs:domain :FirmManifestation .
+
+:firmName a owl:DatatypeProperty ;
+    rdfs:subPropertyOf :label ;
+    a :SummaryProperty ;
+    :label "Firm Name" ;
+    :display true ;
+    :editable true ;
+    rdfs:domain :Firm .
+
+:preferredImage a owl:ObjectProperty ;
+    a :SummaryProperty ;
+    :label "Preferred Image" ;
+    :display false ;
+    :editable true ;
+    :entailsRelationship :RelatedToRelation .
+
+:depictsBuilding a owl:ObjectProperty ;
+    :label "Depicts" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 20 ;
+    rdfs:subPropertyOf dcterms:subject ;
+    :entailsRelationship :RelatedToRelation ;
+    rdfs:domain :DigitalObject .
+
+:interviewer a owl:ObjectProperty ;
+    a :SummaryProperty ;
+    :label "Interviewer" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 110 ;
+    rdfs:subPropertyOf dcterms:subject ;
+    :entailsRelationship :RelatedToRelation ;
+    rdfs:domain :Interview ;
+    rdfs:range foaf:Person .
+
+:interviewee a owl:ObjectProperty ;
+    a :SummaryProperty ;
+    :label "Interviewee" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 120 ;
+    rdfs:subPropertyOf dcterms:subject ;
+    :entailsRelationship :RelatedToRelation ;
+    rdfs:domain :Interview ;
+    rdfs:range foaf:Person .
+
+:transcriber a owl:ObjectProperty ;
+    a :SummaryProperty ;
+    :label "Transcriber" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 130 ;
+    rdfs:subPropertyOf dcterms:subject ;
+    :entailsRelationship :RelatedToRelation ;
+    rdfs:domain :Transcript ;
+    rdfs:range foaf:Person .
+
+:location a owl:DatatypeProperty ;
+    :label "Location" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 50 ;
+#    rdfs:domain :DigitalObject ;
+    rdfs:range xsd:string .
+
+:locatedAt a owl:DatatypeProperty ;
+    :label "Location" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 50 ;
+    rdfs:domain geo:SpatialThing ;
+    rdfs:range xsd:string .
+
+:succeededBy a owl:ObjectProperty ;
+    :label "Succeded By" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain :FirmManifestation ;
+    rdfs:range :FirmManifestation .
+
+:preceededBy a owl:ObjectProperty ;
+    :label "Preceeded By" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain :FirmManifestation ;
+    rdfs:range :FirmManifestation .
+
+:manifestationOf a owl:ObjectProperty ;
+    :label "Firm Manifestation Of" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain :FirmManifestation ;
+    rdfs:range :Firm .
+
+:buildingTypology a owl:ObjectProperty ;
+    :label "Building Typology" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 30 ;
+    rdfs:domain :Structure ;
+    rdfs:range :BuildingTypology .
+
+:photographer a owl:DatatypeProperty ;
+    :label "Photographer" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 150 ;
+    rdfs:domain :Photograph .
+
+:drawingType a owl:ObjectProperty ;
+    a :SummaryProperty ;
+    :label "Drawing Type" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 40 ;
+    rdfs:domain :LineDrawing ;
+    rdfs:range skos:Concept .
+
+:associatedFirm a owl:ObjectProperty ;
+    :label "Firm" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 10 ;
+    :entailsRelationship :RelatedToRelation ;
+    rdfs:domain :Entity ;
+    rdfs:range :Firm .
+
+:hasTranscript a owl:ObjectProperty ;
+    a :SummaryProperty ;
+    :label "Has Transcript" ;
+    :display false ;
+    :editable false ;
+    rdfs:domain :Interview ;
+    rdfs:range :Transcript .
+
+:hasFile a owl:ObjectProperty ;
+    a :SummaryProperty ;
+    :label "Has File" ;
+    rdfs:subPropertyOf frbr:embodiment ;
+    :display false ;
+    :editable false ;
+    rdfs:domain :DigitalObject ;
+    rdfs:range :DigitalFile .
+
+frbr:embodiment a owl:ObjectProperty ; 
+    :label "Embodiment Of" ;
+    :display false ;
+    :editable false ;
+    rdfs:isDefinedBy frbr:embodiment .
+
+#
+# Integration of adopted Dublin Core properties
+#
+
+dcterms:created a owl:DatatypeProperty ;
+    :label "Date Created" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 60 ;
+    rdfs:isDefinedBy dcterms:created .
+
+dcterms:creator a owl:ObjectProperty ;
+    :label "Creator" ;
+    :display false ;
+    :editable false ;
+    rdfs:isDefinedBy dcterms:creator .
+
+dcterms:title a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :label "Title" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 1 ;
+    rdfs:isDefinedBy dcterms:title .
+
+dcterms:description a owl:DatatypeProperty ;
+    :label "Description" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 160 ;
+    rdfs:isDefinedBy dcterms:description .
+
+dcterms:rights a owl:DatatypeProperty ;
+    :label "Rights" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 90 ;
+    rdfs:domain :DigitalObject ;
+    rdfs:isDefinedBy dcterms:rights ;
+    rdfs:comment "Currently a plain text statement of IP status of the work. If required can model this further" .
+
+dcterms:identifier a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :label "External Identifier" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 70 ;
+    rdfs:isDefinedBy dcterms:identifier .
+
+dcterms:subject a owl:DatatypeProperty ;
+    :label "Subject" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 170 ;
+    rdfs:isDefinedBy dcterms:subject .
+
+:identifier a owl:DatatypeProperty ;
+    :label "System Identifier" ;
+    rdfs:subPropertyOf dcterms:identifier ;
+    :display false ;
+    :editable false .
+
+#
+# Datatype properties of Digital Objects as exported from Omeka
+# 
+
+:externalLocation a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :label "External Location" ;
+    :display false ;
+    :editable false ;
+    rdfs:domain :DigitalObject .
+
+:transcriptLocation a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :label "Transcript Location" ;
+    :display false ;
+    :editable false ;
+    rdfs:domain :Interview .
+
+:projectNumber a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :label "Project Number" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 180 ;
+    rdfs:domain :DigitalObject .
+
+:dateOriginalCreation a owl:DatatypeProperty ;
+    rdfs:subPropertyOf dcterms:created ;
+    :label "Original Creation Date" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 190 ;
+    rdfs:domain :DigitalObject .
+
+dcterms:format a owl:DatatypeProperty ;
+    :label "Format" ;
+    :display false ;
+    :editable false ;
+    rdfs:domain :DigitalObject ;
+    rdfs:isDefinedBy dcterms:format .
+
+:authors a owl:DatatypeProperty ;
+    :label "Authors" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 20 ;
+    rdfs:domain :Article .
+
+:periodicalTitle a owl:DatatypeProperty ;
+    :label "Periodical" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 31 ;
+    rdfs:domain :Article .
+
+:volume a owl:DatatypeProperty ;
+    :label "Volume" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 32 ;
+    rdfs:domain :Article .
+
+:issue a owl:DatatypeProperty ;
+    :label "Issue" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 33 ;
+    rdfs:domain :Article .
+
+:datePublished a owl:DatatypeProperty ;
+    :label "Publication Date" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 34 ;
+    rdfs:domain :Article .
+
+:pages a owl:DatatypeProperty ;
+    :label "Pages" ;
+    :display true ;
+    :editable false ;
+    :displayPrecedence 35 ;
+    rdfs:domain :Article .
+
+#
+# Datatype properties for DigitalFiles
+#
+
+:sourceFilename a owl:DatatypeProperty ;
+    :label "Source Filename" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain :DigitalFile ;
+    rdfs:range xsd:string .
+
+:systemLocation a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :label "System Location" ;
+    :display false ;
+    :editable false ;
+    :displayPrecedence 80 ;
+    rdfs:domain :DigitalFile ;
+    rdfs:range xsd:string .
+
+:mimeType a owl:DatatypeProperty ;
+    :label "Mime Type" ;
+    :display false ;
+    :editable false ;
+    rdfs:domain :DigitalFile ;
+    rdfs:range xsd:string .
+
+:basicMimeType a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :label "Basic Mime Type" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain :DigitalFile ;
+    rdfs:range xsd:string .
+
+:fileSize a owl:DatatypeProperty ;
+    :label "File Size" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain :DigitalFile ;
+    rdfs:range xsd:integer .
+
+:uploadedBy a owl:DatatypeProperty ;
+    :label "Uploaded By" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain :DigitalFile ;
+    rdfs:range foaf:Person .
+
+:dateUploaded a owl:DatatypeProperty ;
+    :label "Uploaded On" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain :DigitalFile ;
+    rdfs:range xsd:date .
+
+:managedFile a owl:DatatypeProperty ;
+    :label "Managed File" ;
+    :display false ;
+    :editable false ;
+    rdfs:domain :DigitalFile ;
+    rdfs:range xsd:boolean .
+
+#
+# Geographic Terms
+#
+
+geo:lat a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :label "Latitude" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain geo:SpatialThing ;
+    rdfs:isDefinedBy geo:lat .
+
+geo:long a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :label "Longitude" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain geo:SpatialThing ;
+    rdfs:isDefinedBy geo:long .
+
+:indefiniteMapIcon a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :label "Primary Map Icon" ;
+    :display false ;
+    :editable false ;
+    rdfs:comment "An icon to be used to indicate the presence of an entity on a map" ;
+    rdfs:domain :BuildingTypology .
+
+:definiteMapIcon a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :label "Secondary Map Icon" ;
+    :display false ;
+    :editable false ;
+    rdfs:comment "An icon to be used to indicate a specifically identified entity on a map" ;
+    rdfs:domain :BuildingTypology .
+
+#
+# CRM Terms
+#
+
+:Utterance a owl:Class ;
+    rdfs:subClassOf :DigitalObject ;
+    :label "Utterance" ;
+    :toplevel false .
+
+:UtteranceRecording a owl:Class ;
+    rdfs:subClassOf :Utterance ;
+    :label "Utterance Recording" ;
+    :toplevel false .
+
+:UtteranceTranscript a owl:Class ;
+    rdfs:subClassOf :Utterance ;
+    :label "Utterance Transcript" ;
+    :toplevel false .
+
+:contains a owl:ObjectProperty ;
+    rdfs:subPropertyOf crm:P106_is_composed_of ;
+    rdfs:subPropertyOf dcterms:hasPart ;
+    rdfs:subPropertyOf frbr:part ;
+    :label "Contains" ;
+    :display false ;
+    :editable false .
+
+:containedIn a owl:ObjectProperty ;
+    rdfs:subPropertyOf crm:P106i_is_forms_part_of ;
+    rdfs:subPropertyOf dcterms:isPartOf ;
+    rdfs:subPropertyOf frbr:partOf ;
+    :label "Contained In" ;
+    :display false ;
+    :editable false .
+    
+:references a owl:ObjectProperty ;
+    rdfs:subPropertyOf crm:P67_refers_to ;
+    :label "References" ;
+    :display true ;
+    :editable false ;
+    owl:inverseOf :referencedBy ;
+    rdfs:domain :DigitalObject ;
+    rdfs:range :Entity ;
+    :entailsRelationship :ReferenceRelation .
+
+:referencedBy a owl:ObjectProperty ;
+    rdfs:subPropertyOf crm:P67i_is_referred_to_by ;
+    :label "Referenced By" ;
+    :display true ;
+    :editable false ;
+    owl:inverseOf :references ;
+    rdfs:domain :Entity ;
+    rdfs:range :DigitalObject .
+
+#
+# Imports from other ontologies
+#
+
+crm:P106_is_composed_of a owl:ObjectProperty ;
+    rdfs:isDefinedBy <http://www.cidoc-crm.org/rdfs/cidoc_crm_v5.0.4_official_release.rdfs> ;
+    :display false ;
+    :editable false .
+
+crm:P106i_forms_part_of a owl:ObjectProperty ;
+    rdfs:isDefinedBy <http://www.cidoc-crm.org/rdfs/cidoc_crm_v5.0.4_official_release.rdfs> .
+
+frbr:part rdf:type owl:ObjectProperty ;
+    rdfs:label "part"@en ;
+    rdfs:isDefinedBy frbr:part ;
+    :display false ;
+    :editable false .
+
+frbr:partOf rdf:type owl:ObjectProperty ;
+    rdfs:label "part of"@en ;
+    rdfs:isDefinedBy frbr:partOf ;
+    :display false ;
+    :editable false .
+
+dcterms:hasPart a owl:ObjectProperty ;
+    rdfs:isDefinedBy dcterms:hasPart;
+    rdfs:label "Has Part" ;
+    :display false ;
+    :editable false ;
+    rdfs:comment "Inferred from sub-properties only" .
+
+dcterms:isPartOf a owl:ObjectProperty ;
+    rdfs:isDefinedBy dcterms:isPartOf;
+    rdfs:label "Is Part Of" ;
+    :display false ;
+    :editable false ;
+    rdfs:comment "Inferred from sub-properties only" .
+
+crm:P67_refers_to a owl:ObjectProperty ;
+    rdfs:isDefinedBy <http://www.cidoc-crm.org/rdfs/cidoc_crm_v5.0.4_official_release.rdfs> ;
+    :display false ;
+    :editable false .
+
+crm:P67i_is_referred_to_by a owl:ObjectProperty ;
+    rdfs:isDefinedBy <http://www.cidoc-crm.org/rdfs/cidoc_crm_v5.0.4_official_release.rdfs> ;
+    :display false ;
+    :editable false .
+
+#
+# Support for users, roles, and software agents
+#
+
+:Software a owl:Class ;
+    rdfs:subClassOf foaf:Agent ;
+    :label "Software Agent" ;
+    :toplevel false .
+
+:Role a owl:Class ;
+    rdfs:subClassOf :Entity .
+
+:User a owl:Class ;
+    rdfs:subClassOf foaf:Person ;
+    :label "User" ;
+    :toplevel false .
+
+:hasRole a owl:ObjectProperty ;
+    :display true ;
+    :editable false ;
+    :label "Has Role" ;
+    rdfs:domain foaf:Agent ;
+    rdfs:range :Role .
+
+
+##
+## EPISTEMIC ONTOLOGY EXTENSION
+##
+
+#
+# Annotation Properties
+#
+
+:relationshipDataProperty rdfs:subClassOf owl:DatatypeProperty ;
+    :label "Relationship Detail" ;
+    :display false ;
+    :editable false .
+
+:relationshipObjectProperty rdfs:subClassOf owl:ObjectProperty ;
+    :label "Relationship Detail" ;
+    :display false ;
+    :editable false .
+
+:evidentiaryDataProperty rdfs:subClassOf owl:DatatypeProperty ;
+    :label "Evidentiary Detail" ;
+    :display false ;
+    :editable false .
+
+:evidentiaryObjectProperty rdfs:subClassOf owl:ObjectProperty ;
+    :label "Evidentiary Detail" ;
+    :display false ;
+    :editable false .
+
+:Provenance a owl:Class ;
+    :editable false ;
+    :toplevel false ;
+    :plural "Provenace" ;
+    :singular "Provenace" .
+
+:Evidence a owl:Class ;
+    rdfs:subClassOf :Provenance ;
+    :editable false ;
+    :toplevel false ;
+    :plural "Evidence" ;
+    :singular "Evidence" .
+
+:RelatedToRelation a owl:Class ;
+    rdfs:subClassOf :Relationship ;
+    :label "Related To" ;
+    :impliesRelationship :relatedTo .
+
+:relProperty a owl:Class ;
+    rdfs:subClassOf owl:ObjectProperty ;
+    rdfs:comment "Used to identify reifiable properties within the ontology" .
+
+#
+# Reification properties.
+#
+
+:subject a owl:ObjectProperty ;
+    a :SummaryProperty ;
+    :label "subject" ;
+    rdfs:domain :Relationship ;
+    rdfs:range :Entity .
+
+:predicate a owl:ObjectProperty ;
+    a :SummaryProperty ;
+    :label "predicate" ;
+    rdfs:domain :Relationship ;
+    rdfs:range rdf:Property .
+
+:object a owl:ObjectProperty ;
+    a :SummaryProperty ;
+    :label "object" ;
+    rdfs:domain :Relationship ;
+    rdfs:range :Entity .
+
+:regionStart a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :label "Starts At Time" ;
+    rdfs:domain :Relationship ;
+    rdfs:range xsd:decimal .
+
+:regionEnd a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :label "Ends At Time" ;
+    rdfs:domain :Relationship ;
+    rdfs:range xsd:decimal .
+
+:hasRelationship a owl:ObjectProperty ;
+    :label "Has Relationship" ;
+    rdfs:range :Relationship ;
+    :display false;
+    :editable false .
+
+:entailsRelationship a owl:AnnotationProperty ;
+    :label "Entails Relationship" ;
+    rdfs:domain owl:ObjectProperty ;
+    rdfs:range :Relationship .
+
+:impliesRelationship a owl:AnnotationProperty ;
+    :label "Implies Relationship" ;
+    rdfs:domain :Relationship ;
+    rdfs:range owl:ObjectProperty .
+
+:evidence a owl:ObjectProperty ;
+    rdfs:subPropertyOf :provenance ;
+    :label "Evidenced by" ;
+    :display false ;
+    :editable false ;
+    rdfs:domain :Evincible ;
+    rdfs:range :Evidence .
+
+:provenance a owl:ObjectProperty ;
+    :label "Provenance" ;
+    :display false ;
+    :editable false ;
+    rdfs:comment "Not sure what the domain should be as I need this to be a very generic property" ;
+    rdfs:domain owl:Class ;
+    rdfs:range :Provenance .
+
+#
+# Reification types.
+#
+
+:ReferenceRelation a owl:Class ;
+    :label "Reference" ;
+    rdfs:subClassOf :Relationship ; 
+    rdfs:subClassOf :RelatedToRelation ;
+    :impliesRelationship :references .
+
+:EmploymentRelation a owl:Class ;
+    :label "Employment" ;
+    rdfs:subClassOf :Relationship ; 
+    rdfs:subClassOf :RelatedToRelation ;
+    :impliesRelationship :employedBy .
+
+:TaughtByRelation a owl:Class ;
+    :label "Taught By" ;
+    rdfs:subClassOf :Relationship ; 
+    rdfs:subClassOf :RelatedToRelation ;
+    :impliesRelationship :taughtBy .
+
+:MentoredByRelation a owl:Class ;
+    :label "Mentored By" ;
+    rdfs:subClassOf :Relationship ; 
+    rdfs:subClassOf :RelatedToRelation ;
+    :impliesRelationship :mentoredBy .
+
+:PartnerOfRelation a owl:Class ;
+    :label "Partner Of" ;
+    rdfs:subClassOf :Relationship ; 
+    rdfs:subClassOf :RelatedToRelation ;
+    :impliesRelationship :partnerOf .
+
+:DesignedByRelation a owl:Class ;
+    :label "Designed" ;
+    rdfs:subClassOf :Relationship ; 
+    rdfs:subClassOf :RelatedToRelation ;
+    :impliesRelationship :designedBy .
+
+:StudiedAtRelation a owl:Class ;
+    :label "Studied At" ;
+    rdfs:subClassOf :Relationship ; 
+    rdfs:subClassOf :RelatedToRelation ;
+    :impliesRelationship :studiedAt .
+
+:WorkedWithRelation a owl:Class ;
+    :label "Worked With" ;
+    rdfs:subClassOf :Relationship ; 
+    rdfs:subClassOf :RelatedToRelation ;
+    :impliesRelationship :workedWith .
+
+:WorkedOnRelation a owl:Class ;
+    :label "Worked On" ;
+    rdfs:subClassOf :Relationship ; 
+    rdfs:subClassOf :RelatedToRelation ;
+    :impliesRelationship :workedOn .
+
+:ClientOfRelation a owl:Class ;
+    :label "Client Of" ;
+    rdfs:subClassOf :Relationship ; 
+    rdfs:subClassOf :RelatedToRelation ;
+    :impliesRelationship :clientOf .
+
+:KnewSociallyRelation a owl:Class ;
+    :label "Knew Socially" ;
+    rdfs:subClassOf :Relationship ; 
+    rdfs:subClassOf :RelatedToRelation ;
+    :impliesRelationship :knewSocially .
+
+:KnewProfessionallyRelation a owl:Class ;
+    :label "Knew Professionally" ;
+    rdfs:subClassOf :Relationship ; 
+    rdfs:subClassOf :RelatedToRelation ;
+    :impliesRelationship :knewProfessionally .
+
+:InfluencedByRelation a owl:Class ;
+    :label "Influenced By" ;
+    rdfs:subClassOf :Relationship ; 
+    rdfs:subClassOf :RelatedToRelation ;
+    :impliesRelationship :influencedBy .
+
+:CollaboratedWith a owl:Class ;
+    :label "Collaborated With" ;
+    rdfs:subClassOf :Relationship ; 
+    rdfs:subClassOf :RelatedToRelation ;
+    :impliesRelationship :collaboratedWith .
+
+#
+# Reified properties.
+#
+
+:employedBy a :relProperty ;
+    :label "Employed By" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain foaf:Person ;
+    rdfs:range foaf:Agent ;
+    :entailsRelationship :EmploymentRelation .
+
+:taughtBy a :relProperty ;
+    :label "Taught By" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain foaf:Person ;
+    rdfs:range foaf:Person ;
+    :entailsRelationship :TaughtByRelation .
+
+:mentoredBy a :relProperty ;
+    :label "Mentored By" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain foaf:Person ;
+    rdfs:range foaf:Person ;
+    :entailsRelationship :MentoredByRelation .
+
+:partnerOf a :relProperty ;
+    :label "Partner Of" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain foaf:Person ;
+    rdfs:range :Firm ;
+    :entailsRelationship :PartnerOfRelation .
+
+:designedBy a :relProperty ;
+    :label "Designed By" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain :Structure ;
+    rdfs:range foaf:Agent ;
+    :entailsRelationship :DesignedByRelation .
+
+:studiedAt a :relProperty ;
+    :label "Studied At" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain foaf:Agent ;
+    rdfs:range :EducationalInstitution ;
+    :entailsRelationship :StudiedAtRelation .
+
+:workedWith a :relProperty ;
+    :label "Worked With" ;
+    :display true ;
+    :editable true ;
+    rdfs:domain foaf:Person ;
+    rdfs:range foaf:Person ;
+    :entailsRelationship :WorkedWithRelation .
+
+:workedOn a :relProperty ;
+    :label "Worked On" ;
+    :display true ;
+    :editable true ;
+    rdfs:domain :Architect ;
+    rdfs:range :Structure ;
+    :entailsRelationship :WorkedOnRelation .
+
+:clientOf a :relProperty ;
+    :label "Client Of" ;
+    :display true ;
+    :editable true ;
+    rdfs:domain foaf:Agent ;
+    rdfs:range :Architect ;
+    :entailsRelationship :ClientOfRelation .
+
+:knew a owl:ObjectProperty ;
+    :label "Knew" ;
+    :display true ;
+    :editable true ;
+    rdfs:domain foaf:Person ;
+    rdfs:range foaf:Person .
+
+:knewSocially a :relProperty ;
+    rdfs:subPropertyOf :knew ;
+    :label "Knew Socially" ;
+    :display true ;
+    :editable true ;
+    rdfs:domain foaf:Person ;
+    rdfs:range foaf:Person ;
+    :entailsRelationship :KnewSociallyRelation .
+
+:knewProfessionally a :relProperty ;
+    rdfs:subPropertyOf :knew ;
+    :label "Knew Professionally" ;
+    :display true ;
+    :editable true ;
+    rdfs:domain foaf:Person ;
+    rdfs:range foaf:Person ;
+    :entailsRelationship :KnewProfessionallyRelation .
+
+:influencedBy a :relProperty ;
+    :label "Influenced By" ;
+    :display true ;
+    :editable true ;
+    rdfs:domain :Architect ;
+    rdfs:range :StructureOrAgentOrTopic ;
+    :entailsRelationship :InfluencedBy .
+
+:collaboratedWith a :relProperty ;
+    :label "Collaborated With" ;
+    :display true ;
+    :editable true ;
+    rdfs:domain :Architect ;
+    rdfs:range foaf:Person ;
+    :entailsRelationship :InfluencedBy .
+
+# NOTE: relatedTo does not entail a reified relationship, as then it would be evidence of itself.
+
+:relatedTo a :relProperty ;
+    a owl:SymmetricProperty ;
+    :label "Related To" ;
+    :display false ;
+    :editable false .
+
+#
+# Extra properties of reified relationships.
+#
+
+:startDate a :relationshipDataProperty ;
+    :label "Start Date" ;
+    :display true ;
+    :editable true ;
+    rdfs:domain :Relationship ;
+    rdfs:range xsd:date .
+
+:endDate a :relationshipDataProperty ;
+    :label "End Date" ;
+    :display true ;
+    :editable true ;
+    rdfs:domain :Relationship ;
+    rdfs:range xsd:date .
+# should replace these with qadt:circa as this is the sum-type one-of(date,gYear,gYearMonth)
+
+:textualNote a :relationshipDataProperty ;
+    :label "Note" ;
+    :display true ; 
+    :editable true ;
+    rdfs:domain :Evincible ;
+    rdfs:range xsd:string .
+#
+# Extra properties of evidence
+#
+
+:assertedBy a :evidentiaryObjectProperty ;
+    :label "Asserted By" ;
+    :display true;
+    :editable false ;
+    rdfs:domain :Evidence ;
+    rdfs:range :User .
+
+:documentedBy a :evidentiaryObjectProperty ;
+    :label "Documented By" ;
+    :display true;
+    :editable false ;
+    rdfs:domain :Evidence ;
+    rdfs:range :DigitalObject .
+
+:timeFrom a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :label "From Time" ;
+    rdfs:domain :Evidence ;
+    rdfs:range xsd:decimal .
+
+:timeTo a owl:DatatypeProperty ;
+    a :SummaryProperty ;
+    :label "To Time" ;
+    rdfs:domain :Evidence ;
+    rdfs:range xsd:decimal .
+
+:assertionDate a :evidentiaryDataProperty ;
+    :label "Date Asserted" ;
+    :display true;
+    :editable false ;
+    rdfs:domain :Evidence ;
+    rdfs:range xsd:date .
+
+:justification a :evidentiaryDataProperty ;
+    :label "Justification" ;
+    :display true;
+    :editable false ;
+    rdfs:domain :Evidence ;
+    rdfs:range xsd:string .
+
+##
+## AUXILLARY INGEST ONTOLOGY
+##
+
+<http://qldarch.net/ns/omeka/2012-11/auxterms#> a owl:Ontology .
+
+#
+# Annotation Properties
+#
+
+qaat:AuxProperty rdfs:subClassOf rdf:Property .
+
+qaat:AuxDatatypeProperty rdfs:subClassOf owl:DatatypeProperty, qaat:AuxProperty .
+
+qaat:AuxObjectProperty rdfs:subClassOf owl:ObjectProperty, qaat:AuxProperty .
+
+#
+# Controlled Vocabulary Export Classes
+#
+
+qaat:AuxClass a owl:Class .
+
+qaat:PseudoEntity a owl:Class ;
+    rdfs:subClassOf qaat:AuxClass ;
+    rdfs:comment "Used as a temporary placeholder for export of controlled vocabularies from omeka." ;
+    :label "Pseudo Entity" .
+
+qaat:label a qaat:AuxDatatypeProperty ;
+    :label "Concept label" ;
+    rdfs:domain qaat:PseudoEntity ;
+    rdfs:range xsd:string ;
+    rdfs:comment "A label for a concept from a controlled vocab" .
+
+qaat:reconciledTo a qaat:AuxObjectProperty ;
+    :label "Reconciled To" ;
+    rdfs:domain qaat:PseudoEntity ;
+    rdfs:range :Entity .
+
+qaat:Person a owl:Class ;
+    rdfs:subClassOf qaat:PseudoEntity ;
+    rdfs:comment "A person identified within Omeka" ;
+    :label "Person" .
+
+qaat:Format a owl:Class ;
+    rdfs:subClassOf qaat:PseudoEntity ;
+    rdfs:comment "A format identified within Omeka" ;
+    :label "Format" .
+    
+qaat:Subject a owl:Class ;
+    rdfs:subClassOf qaat:PseudoEntity ;
+    rdfs:comment "A subject identified within Omeka" ;
+    :label "Subject" .
+    
+qaat:DrawingType a owl:Class ;
+    rdfs:subClassOf qaat:PseudoEntity ;
+    rdfs:comment "A drawing-type identified within Omeka" ;
+    :label "Drawing Type" .
+    
+qaat:ProjectName a owl:Class ;
+    rdfs:subClassOf qaat:PseudoEntity ;
+    rdfs:comment "A project name identified within Omeka" ;
+    :label "Project Name" .
+    
+qaat:Firm a owl:Class ;
+    rdfs:subClassOf qaat:PseudoEntity ;
+    rdfs:comment "A firm identified within Omeka" ;
+    :label "Firm" .
+    
+qaat:BuildingTypology a owl:Class ;
+    rdfs:subClassOf qaat:PseudoEntity ;
+    rdfs:comment "A building typology identified within Omeka" ;
+    :label "Building Typology" .
+    
+#
+# Auxillary Datatype Properties.
+#
+
+qaat:transcriptItem a qaat:AuxDatatypeProperty ;
+    :label "Transcript Item" ;
+    :display false ;
+    :editable false ;
+    rdfs:domain :Interview .
+
+qaat:preferredImage a qaat:AuxDatatypeProperty ;
+    :label "Preferred Image" ;
+    :display false ;
+    :editable false .
+
+#
+# Properties relating to Controlled Vocabularies
+#
+
+qaat:interviewerIn a qaat:AuxObjectProperty ;
+    :label "Interviewer In" ;
+    :display false ;
+    :editable false ;
+    rdfs:domain qaat:Person ;
+    rdfs:range :Interview .
+
+qaat:intervieweeIn a qaat:AuxObjectProperty ;
+    :label "Interviewee In" ;
+    :display false ;
+    :editable false ;
+    rdfs:domain qaat:Person ;
+    rdfs:range :Interview .
+
+qaat:transcriberOf a qaat:AuxObjectProperty ;
+    :label "Transcriber Of" ;
+    :display false ;
+    :editable false ;
+    rdfs:domain qaat:Person ;
+    rdfs:range :Transcript .
+
+qaat:subjectOf a qaat:AuxObjectProperty ;
+    :label "Has Subject" ;
+    :display false ;
+    :editable false ;
+    rdfs:domain qaat:Subject ;
+    rdfs:range :DigitalObject .
+
+qaat:contemporaryTo a qaat:AuxObjectProperty ;
+    :label "Contemporary To" ;
+    :display false ;
+    :editable false ;
+    rdfs:domain qaat:Firm ;
+    rdfs:range :DigitalObject .
+
+qaat:typedDrawing a qaat:AuxObjectProperty ;
+    :label "Drawing" ;
+    :display false ;
+    :editable false ;
+    rdfs:domain qaat:DrawingType ;
+    rdfs:range :DigitalObject .
+
+qaat:buildingTypologyOf a qaat:AuxObjectProperty ;
+    :label "Building Typology Of" ;
+    :display false ;
+    :editable false ;
+    rdfs:domain qaat:BuildingTypology ;
+    rdfs:range :DigitalObject .
+
+qaat:projectNameOf a qaat:AuxObjectProperty ;
+    :label "Project Name Of" ;
+    :display false ;
+    :editable false ;
+    rdfs:domain qaat:ProjectName ;
+    rdfs:range :DigitalObject .
+
+qaat:created a qaat:AuxObjectProperty ;
+    :label "Created" ;
+    :display false ;
+    :editable false ;
+    rdfs:domain qaat:Person ;
+    rdfs:range :DigitalObject .
+
+qaat:created a qaat:AuxObjectProperty ;
+    :label "Created" ;
+    :display false ;
+    :editable false ;
+    rdfs:domain qaat:Person ;
+    rdfs:range :DigitalObject .
+
+qaat:subjectTypeOf a qaat:AuxObjectProperty ;
+    :label "Subject Type Of" ;
+    :display false ;
+    :editable false ;
+    rdfs:domain qaat:Portrait ;
+    rdfs:range :DigitalObject .
+
+#
+# Geographic metadata.
+#
+
+qaat:latitude a qaat:AuxDatatypeProperty ;
+    :label "Associated Latitude" ;
+    :display false ;
+    :editable false .
+
+qaat:longitude a qaat:AuxDatatypeProperty ;
+    :label "Associated Longitude" ;
+    :display false ;
+    :editable false .
+
+qaat:definiteMapIcon a qaat:AuxDatatypeProperty ;
+    :label "Definite Map Icon" ;
+    :display false ;
+    :editable true .
+
+qaat:indefiniteMapIcon a qaat:AuxDatatypeProperty ;
+    :label "Indefinite Map Icon" ;
+    :display false ;
+    :editable true .
+
+
+##
+## CONTROLLED VOCABULARIES
+##
+
+#
+# Drawing Type vocabulary
+#
+
+qavocab:Genders a skos:ConceptScheme .
+
+qavocab:Male a skos:Concept ;
+    a qldarch:Gender ;
+    skos:inScheme qavocab:Genders ;
+    qldarch:label "Male" .
+
+qavocab:Female a skos:Concept ;
+    a qldarch:Gender ;
+    skos:inScheme qavocab:Genders ;
+    qldarch:label "Female" .
+
+qavocab:DrawingTypes a skos:ConceptScheme ;
+    skos:hasTopConcept qavocab:LineDrawing .
+
+qavocab:LineDrawing a skos:Concept ;
+    a qldarch:DrawingType ;
+    skos:inScheme qavocab:DrawingTypes ;
+    qldarch:label "Line Drawing" .
+
+qavocab:Perspective a skos:Concept ;
+    a qldarch:DrawingType ;
+    skos:inScheme qavocab:DrawingTypes ;
+    skos:broader qavocab:LineDrawing ;
+    skos:altLabel "Perspective" ;
+    qldarch:label "Perspective" .
+
+qavocab:Section a skos:Concept ;
+    a qldarch:DrawingType ;
+    skos:inScheme qavocab:DrawingTypes ;
+    skos:broader qavocab:LineDrawing ;
+    skos:altLabel "Section" ;
+    qldarch:label "Section" .
+
+qavocab:Sketch a skos:Concept ;
+    a qldarch:DrawingType ;
+    skos:inScheme qavocab:DrawingTypes ;
+    skos:broader qavocab:LineDrawing ;
+    skos:altLabel "Sketch" ;
+    qldarch:label "Sketch" .
+
+qavocab:Elevation a skos:Concept ;
+    a qldarch:DrawingType ;
+    skos:inScheme qavocab:DrawingTypes ;
+    skos:broader qavocab:LineDrawing ;
+    skos:altLabel "Elevation" ;
+    qldarch:label "Elevation" .
+
+qavocab:Plan a skos:Concept ;
+    a qldarch:DrawingType ;
+    skos:inScheme qavocab:DrawingTypes ;
+    skos:broader qavocab:LineDrawing ;
+    skos:altLabel "Plan" ;
+    qldarch:label "Plan" .
+
+# vim: set ai si sw=4 sts=4 ts=4 expandtab:

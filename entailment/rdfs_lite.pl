@@ -83,8 +83,8 @@ rdf(S, serql:directSubPropertyOf, O) :- !,
 rdf(S, rdfs:subClassOf, O) :- ( atom(S) ; atom(O) ), !,
 	rdf_reachable(S, rdfs:subClassOf, O).
 rdf(S, rdfs:subClassOf, O) :- !,
-	rdf_has(S, rdfs:subClassOf, Direct),
-	rdf_reachable(Direct, rdfs:subClassOf, O).
+       rdf_has(S, rdfs:subClassOf, Direct),
+       rdf_reachable(Direct, rdfs:subClassOf, O).
 rdf(S, rdfs:subPropertyOf, O) :- !,
 	rdf_reachable(S, rdfs:subPropertyOf, O).
 rdf(S, rdf:type, O) :- !,

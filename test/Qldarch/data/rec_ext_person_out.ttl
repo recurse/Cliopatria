@@ -1,0 +1,39 @@
+@prefix   xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix   rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix qaint: <http://qldarch.net/ns/rdf/2013-08/internal#> .
+@prefix  qaat: <http://qldarch.net/ns/omeka/2012-11/auxterms#> .
+
+# Named toplevel resources (4)
+
+<http://qldarch.net/ns/omeka/2012-11/pseudoentity#Creator,Deborah+van+der+Plaat>
+    a qaat:Person ,
+      qaat:PseudoEntity ;
+    qaat:created <http://qldarch.net/omeka/items/show/17> ;
+    qaat:label "Deborah van der Plaat"@en ;
+    qaat:pseudoEntityType "Creator"^^xsd:string ;
+    qaat:reconciledTo qaint:deborahvan .
+
+<http://qldarch.net/ns/omeka/2012-11/pseudoentity#Interviewer,Creator+der+Plaat>
+    a qaat:Person ,
+      qaat:PseudoEntity ;
+    qaat:created <http://qldarch.net/omeka/items/show/18> ;
+    qaat:label "Deborah der Plaat"^^xsd:string ;
+    qaat:pseudoEntityType "Creator"^^xsd:string ;
+    qaat:reconciledTo qaint:deborah .
+
+<http://qldarch.net/ns/omeka/2012-11/pseudoentity#Interviewer,Deborah+der+Plaat>
+    a qaat:Person ,
+      qaat:PseudoEntity ;
+    qaat:interviewerIn <http://qldarch.net/omeka/items/show/18> ;
+    qaat:label "Deborah der Plaat" ;
+    qaat:pseudoEntityType "Interviewer"^^xsd:string ;
+    qaat:reconciledTo qaint:deborah .
+
+<http://qldarch.net/ns/omeka/2012-11/pseudoentity#Interviewer,Deborah+van+der+Plaat>
+    a qaat:Person ,
+      qaat:PseudoEntity ;
+    qaat:interviewerIn <http://qldarch.net/omeka/items/show/17> ;
+    qaat:label "Deborah van der Plaat"^^xsd:string ;
+    qaat:pseudoEntityType "Interviewer"^^xsd:string ;
+    qaat:reconciledTo qaint:deborahvan .
+

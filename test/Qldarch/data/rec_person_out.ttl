@@ -1,0 +1,41 @@
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix  xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix  rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix qaat: <http://qldarch.net/ns/omeka/2012-11/auxterms#> .
+
+# Named toplevel resources (3)
+
+<http://qldarch.net/ns/omeka/2012-11/pseudoentity#Creator,Dummy+Person+1>
+    a qaat:Person ,
+      qaat:PseudoEntity ;
+    qaat:created <http://qldarch.net/omeka/items/show/1766> ;
+    qaat:label "Dummy Person 1"^^xsd:string ;
+    qaat:pseudoEntityType "Creator"^^xsd:string ;
+    qaat:reconciledTo _:bn1 .
+
+<http://qldarch.net/ns/omeka/2012-11/pseudoentity#Interviewer,Dummy+Person+1>
+    a qaat:Person ,
+      qaat:PseudoEntity ;
+    qaat:interviewerIn <http://qldarch.net/omeka/items/show/1766> ;
+    qaat:label "Dummy Person 1"^^xsd:string ;
+    qaat:pseudoEntityType "Interviewer"^^xsd:string ;
+    qaat:reconciledTo _:bn1 .
+
+<http://qldarch.net/ns/omeka/2012-11/pseudoentity#Interviewer,Dummy+Person+2>
+    a qaat:Person ,
+      qaat:PseudoEntity ;
+    qaat:interviewerIn <http://qldarch.net/omeka/items/show/1766> ;
+    qaat:label "Dummy Person 2"^^xsd:string ;
+    qaat:pseudoEntityType "Interviewer"^^xsd:string ;
+    qaat:reconciledTo [ a foaf:Person ;
+                foaf:firstName "Dummy"^^xsd:string ;
+                foaf:lastName "Person 2"^^xsd:string
+              ] .
+
+# Level 1 multi-referenced blank-nodes (1)
+
+_:bn1
+    a foaf:Person ;
+    foaf:firstName "Dummy"^^xsd:string ;
+    foaf:lastName "Person 1"^^xsd:string .
+
