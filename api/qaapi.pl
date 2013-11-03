@@ -28,7 +28,7 @@ This module provides qldarch ingest support.
 
 :- rdf_meta
     assertNormalizedStmt(o,o,o,+),
-    entail(r,r,o,r),
+    entail(r,r,?,r),
     qldarch(o,o,o),
     reconciled_to(r,r,r),
     create_entity(r,r,r),
@@ -208,8 +208,8 @@ entail(DigitalObject, QAPred, Entity, G) :-
 
 % NOTE: If we ever interview anyone who isn't an Architect we can no longer make
 %   this assumption.
-% { ?p a foaf:Person .
-%   [ qldarch:interviewee ?p ] . 
+%   { ?p a foaf:Person .
+%     [ qldarch:interviewee ?p ] . 
 %   } => { ?p a qldarch:Architect} .
 %   FIXME: TESTS REQUIRED
 entail(Person, RdfType, Architect, G) :-
@@ -217,6 +217,63 @@ entail(Person, RdfType, Architect, G) :-
     rdf_equal(Architect, qldarch:'Architect'),
     entail(_DigitalObject, qldarch:interviewee, Person, G),
     instance_of(Person, foaf:'Person', G).
+
+%   { ?do a qldarch:DigitalObject .
+%     ?do qldarch:associatedFirm ?firm .
+%     ?do qldarch:depictsBuilding ?building .
+%   } => { ?building qldarch:associatedFirm ?firm } .
+entail(Building, AssociatedFirm, Firm, G) :-
+    format('~ntop-Entail: [~w, ~w, ~w in ~w]?~n', [Building, AssociatedFirm, Firm, G]),
+    entail_assoc(Building, AssociatedFirm, Firm, G),
+    format('top-Entailed: [~w, ~w, ~w in ~w]~n', [Building, AssociatedFirm, Firm, G]).
+
+entail_assoc(Building, AssociatedFirm, Firm, G) :-
+    format('Predicate check: ~w = ~w~n', [AssociatedFirm, 'qldarch:associatedFirm']),
+    rdf_equal(AssociatedFirm, qldarch:associatedFirm),
+    format('rec-first-Entail: [~w, ~w, ~w in ~w]?~n', [DigitalObject, 'qldarch:depictsBuilding', Building, G]),
+    entail(DigitalObject, qldarch:depictsBuilding, Building, G),
+    format('rec-first-Entailed: [~w, ~w, ~w in ~w]~n', [DigitalObject, 'qldarch:depictsBuilding', Building, G]),
+    format('rec-second-Entail: [~w, ~w, ~w in ~w]?~n', [DigitalObject, AssociatedFirm, Firm, G]),
+    entail(DigitalObject, AssociatedFirm, Firm, G),
+    format('rec-second-Entailed: [~w, ~w, ~w in ~w]~n', [DigitalObject, AssociatedFirm, Firm, G]).
+
+%   { ?do a qldarch:DigitalObject .
+%     ?do qldarch:location ?location .
+%     ?do qldarch:depictsBuilding ?building .
+%   } => { ?building qldarch:location ?location } .
+%   Note: ?do qldarch:location ?location is exported directly from omeka via D2RQ
+%entail(Building, QALocation, Location, G) :-
+%    rdf_equal(QALocation, qldarch:location),
+%    rdf_equal(DepictsBuilding, qldarch:depictsBuilding),
+%    entail(DigitalObject, QALocation, Location, G),
+%    entail(DigitalObject, DepictsBuilding, Building, G),
+%    instance_of(DigitalObject, qldarch:'DigitalObject'),
+%    instance_of(Building, qldarch:'Structure').
+
+%   { ?do a qldarch:DigitalObject .
+%     ?do qaat:latitude ?lat .
+%     ?do qldarch:depictsBuilding ?building .
+%   } => { ?building geo:lat ?lat } .
+%entail(Building, GeoLat, Latitude, G) :-
+%    rdf_equal(GeoLat, geo:lat),
+%    entail(DigitalObject, qaat:latitude, LatitudeOut, G),
+%    as_decimal(LatitudeOut, Latitude),
+%    entail(DigitalObject, qldarch:depictsBuilding, Building, G),
+%    instance_of(DigitalObject, qldarch:'DigitalObject'),
+%    instance_of(Building, qldarch:'Structure').
+
+%   { ?do a qldarch:DigitalObject .
+%     ?do qaat:longitude ?long .
+%     ?do qldarch:depictsBuilding ?building .
+%   } => { ?building geo:long ?long } .
+%entail(Building, GeoLong, Longitude, G) :-
+%    rdf_equal(GeoLong, geo:long),
+%    entail(DigitalObject, qaat:longitude, LongitudeOut, G),
+%    as_decimal(LongitudeOut, Longitude),
+%    entail(DigitalObject, qldarch:depictsBuilding, Building, G),
+%    instance_of(DigitalObject, qldarch:'DigitalObject'),
+%    instance_of(Building, qldarch:'Structure').
+
 
 %   { ?e qaat:reconciledTo ?person .
 %     ?do a qldarch:Interview .
@@ -256,9 +313,15 @@ entail(Person, RdfType, Architect, G) :-
 %     ?e qaat:contemporaryTo ?s .
 %   } => { ?s qldarch:associatedFirm ?firm } .
 classification(DigitalObject, QAPred, Entity, G) :-
-    reconciled_to(PE, Entity, G), % Note: reconciled_to does instance_of check.
+    format('Classifying ~w via ~w to ~w in ~w~n', [DigitalObject, QAPred, Entity, G]),
     predicate_pair(QAPred, QAATPred),
-    rdf(PE, QAATPred, DigitalObject, G).
+    rdf(PE, QAATPred, DigitalObject, G),
+    format('Reconciling ~w to ~w~n', [PE, Entity]),
+    (   reconciled_to(PE, Entity, G) -> % Note: reconciled_to does instance_of check.
+        format('Reconciled ~w to ~w~n', [PE, Entity]) ;
+        format('Failed reconcilation of ~w to ~w~n', [PE, Entity])
+    ),
+    format('Classified ~w via ~w to ~w in ~w~n', [DigitalObject, QAPred, Entity, G]).
     % Consider adding a domain check to the entailment.
 
 % FIXME: TESTS REQUIRED
@@ -321,25 +384,31 @@ convert_item_to_URI(Item, _) :-
 %    atom(PseudoEntity), atom(Entity),
 %    rdf(PseudoEntity, qaat:reconciledTo, Entity, G), !.
 
-reconciled_to(PseudoEntity, Building, G) :-
+reconciled_to(PseudoEntity, Entity, G) :-
+    format('Doing PN reconciliation ~w to ~w in ~w~n', [PseudoEntity, Entity, G]),
     instance_of(PseudoEntity, qaat:'ProjectName', G),
-    reconciled_to_building(PseudoEntity, Building, G).
+    format('~w is instance of ~w in ~w~n', [PseudoEntity, 'qaat:ProjectName', G]),
+    reconciled_to_building(PseudoEntity, Entity, G).
 
-reconciled_to(PseudoEntity, DrawingType, G) :-
+reconciled_to(PseudoEntity, Entity, G) :-
+    format('Doing DT reconciliation ~w to ~w in ~w~n', [PseudoEntity, Entity, G]),
     instance_of(PseudoEntity, qaat:'DrawingType', G),
-    reconciled_to_drawing_type(PseudoEntity, DrawingType, G).
+    reconciled_to_drawing_type(PseudoEntity, Entity, G).
 
-reconciled_to(PseudoEntity, Firm, G) :-
+reconciled_to(PseudoEntity, Entity, G) :-
+    format('Doing F reconciliation ~w to ~w in ~w~n', [PseudoEntity, Entity, G]),
     instance_of(PseudoEntity, qaat:'Firm', G),
-    reconciled_to_firm(PseudoEntity, Firm, G).
+    reconciled_to_firm(PseudoEntity, Entity, G).
 
-reconciled_to(PseudoEntity, Firm, G) :-
+reconciled_to(PseudoEntity, Entity, G) :-
+    format('Doing P reconciliation ~w to ~w in ~w~n', [PseudoEntity, Entity, G]),
     instance_of(PseudoEntity, qaat:'Person', G),
-    reconciled_to_person(PseudoEntity, Firm, G).
+    reconciled_to_person(PseudoEntity, Entity, G).
 
-reconciled_to(PseudoEntity, Typology, G) :-
+reconciled_to(PseudoEntity, Entity, G) :-
+    format('Doing BT reconciliation ~w to ~w in ~w~n', [PseudoEntity, Entity, G]),
     instance_of(PseudoEntity, qaat:'BuildingTypology', G),
-    reconciled_to_typology(PseudoEntity, Typology, G).
+    reconciled_to_typology(PseudoEntity, Entity, G).
 
 %   { ?e a qaat:ProjectName .
 %     ?e qaat:label ?l .
@@ -348,18 +417,45 @@ reconciled_to(PseudoEntity, Typology, G) :-
 %     ?l str:equalIgnoringCase ?buildinglabel .
 %   } => { ?e qaat:reconciledTo ?building } . 
 reconciled_to_building(PseudoEntity, Building, G) :-
+    format('Doing building reconcilation of ~w to ~w in ~w~n', [PseudoEntity, Building, G]),
     atom(PseudoEntity),
+    format('Querying [~w, ~w, ~w in ~w]~n', [PseudoEntity, 'qaat:label', Label, G]),
     rdf(PseudoEntity, qaat:label, Label, G),
+    format('Obtained [~w, ~w, ~w in ~w]~n', [PseudoEntity, 'qaat:label', Label, G]),
     label_value(Label, Value),
+    format('Converted ~w to ~w~n', [Label, Value]),
     (   
-        (   entity_graph(EntityGraph, G),
-            rdf(Building, qldarch:label, literal(exact(Value), _), EntityGraph),
-            instance_of(Building, qldarch:'Structure', EntityGraph)
+        (   format('Checking for Graphs'),
+            entity_graph(EntityGraph, G),
+            format('Checking Graph ~w~n', [EntityGraph]),
+            (   var(Building) ->
+                (
+                    format('In Var Branch~n', []),
+                    format('Querying [~w, ~w, literal(exact(~w), _) in ~w]~n', [Building, 'qldarch:label', Value, EntityGraph]),
+                    rdf(Building, qldarch:label, literal(exact(Value), _), EntityGraph),
+                    format('Obtained [~w, ~w, literal(exact(~w), _) in ~w]~n', [Building, 'qldarch:label', Value, EntityGraph]),
+                    format('Checking ~w instance_of ~w in ~w~n', [Building, 'qldarch:Structure', EntityGraph]),
+                    instance_of(Building, qldarch:'Structure', EntityGraph),
+                    format('Confirmed ~w instance_of ~w in ~w~n', [Building, 'qldarch:Structure', EntityGraph])
+                ) ;
+                (
+                    format('In NonVar Branch~n', []),
+                    format('Checking ~w instance_of ~w in ~w~n', [Building, 'qldarch:Structure', EntityGraph]),
+                    instance_of(Building, qldarch:'Structure', EntityGraph),
+                    format('Confirmed ~w instance_of ~w in ~w~n', [Building, 'qldarch:Structure', EntityGraph]),
+                    format('Querying [~w, ~w, literal(exact(~w), _) in ~w]~n', [Building, 'qldarch:label', Value, EntityGraph]),
+                    rdf(Building, qldarch:label, literal(exact(Value), _), EntityGraph),
+                    format('Obtained [~w, ~w, literal(exact(~w), _) in ~w]~n', [Building, 'qldarch:label', Value, EntityGraph])
+                )
+            )
         ) -> true ;
-        (   create_entity(qldarch:'Structure', Building, G),
+        (   format('Creating a ~w entity: ~w~n', ['qldarch:Structure', Building]),
+            create_entity(qldarch:'Structure', Building, G),
             rdf_assert(Building, qldarch:label, Label, G)
         )
-    ), !.
+    ),
+    format('Reconciled building ~w to ~w in ~w~n', [PseudoEntity, Building, G]),
+    !.
 
 %   { ?e a qaat:DrawingType .
 %     ?e qaat:label ?label .
@@ -458,17 +554,30 @@ reconciled_to_typology(PseudoEntity, Typology, G) :-
     ), !.
 
 create_entity(Type, Entity, G) :-
-    nonvar(G) ->
+    ( nonvar(G), var(Entity) ) ->
         rdf_bnode(Entity),
         rdf_assert(Entity, rdf:type, Type, G)
     ; throw(error(instantiation_error, _)).
         
 instance_of(S, C, G) :-
+    format('nonvar instance_of: ~W, ~W in ~w~n', [S, [quoted(true)], C, [quoted(true)], G]),
     (nonvar(S) ; nonvar(C)), !,
+    format('Querying rdf(~W, rdf:type, ~W, ~W)~n', [S, [quoted(true)], Class, [quoted(true)], G, [quoted(true)]]),
     rdf(S, rdf:type, Class, G),
-    is_subclass_of(Class, C).
+    format('Found rdf(~W, rdf:type, ~W, ~W)~n', [S, [quoted(true)], Class, [quoted(true)], G, [quoted(true)]]),
+    format('is_subclass_of(~W, ~W)~n', [Class, [quoted(true)], C, [quoted(true)]]),
+    (
+        is_subclass_of(Class, C) ->
+        format('Proved is_subclass_of(~W, ~W)~n', [Class, [quoted(true)], C, [quoted(true)]]) ;
+        (
+            format('Falsified is_subclass_of(~W, ~W)~n', [Class, [quoted(true)], C, [quoted(true)]]),
+            fail
+        )
+    ).
+
 
 instance_of(S, C, G) :-
+    format('var instance_of: ~w, ~w in ~w~n', [S, C, G]),
     is_resource_in_graph(S, G),
     instance_of(S, C, G).
 
@@ -582,6 +691,20 @@ is_predicate_in_graph(P, G) :-
 is_object_in_graph(O, G) :-
     rdf(_, _, O, G),
     rdf_is_resource(O).
+
+as_decimal(type(_, Raw), Out) :-
+    !, atom_number(Raw, _),
+    Out = type(xsd:decimal, Raw).
+
+as_decimal(lang(_,_), _) :-
+    !, fail.
+
+as_decimal(literal(In), Out) :-
+    as_decimal(In, Out).
+
+as_decimal(In, Out) :-
+    atom_number(In, _),
+    Out = type(xsd:decimal, In).
 
 entity_graph(EntityGraph) :-
     rdf_equal(Catalogue, qacatalog:''),

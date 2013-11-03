@@ -10,14 +10,3 @@ qaomeka:1 a qaat:BuildingTypology, qaat:PseudoEntity ;
 
 _:2 a qaat:BuildingTypology, qaat:PseudoEntity ;
   qaat:label "Dwellings" .
-
-# Obtained via reconcilation entailment.
-
-[ a qldarch:BuildingTypology ;
-  qldarch:label "Dwellings"
-] .
-
-[ a qldarch:BuildingTypology ;
-  qldarch:label "Commercial buildings"
-] .
-

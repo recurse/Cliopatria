@@ -6,5 +6,6 @@
 
 <1> a qaat:BuildingTypology ;
   qaat:label "Commercial buildings" .
+
 _:2 a qaat:BuildingTypology ;
   qaat:label "Dwellings" .
