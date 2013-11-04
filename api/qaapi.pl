@@ -7,6 +7,7 @@
         load_file/3,
         load_file/4,
         entail/4,
+        entailment/2,
         reconciled_to/3,
         atom_split/4,
         do/1
@@ -18,6 +19,7 @@
 :- use_module(library(http/http_parameters)).
 :- use_module(library(http/http_json)).
 :- use_module(library(gensym)).
+:- use_module(library(dialect/ifprolog)).
 
 :- http_handler(qaapi(ingest), load_omeka, []).
 
@@ -162,12 +164,50 @@ clean(S, P, O, G) :-
         instance_of(S, qldarch:'Evincible', G)
     ).
 
+%   FIXME: TESTS REQUIRED
+entailment(Graph, OutGraph) :-
+    rdf_bnode(TempGraph),
+    rdf_create_graph(TempGraph),
+    foreach(entail(S, P, O, Graph), call(rdf_assert, S, P, O, TempGraph)),
+    foreach(rdf(S, P, O, Graph), call(rdf_assert, S, P, O, TempGraph)),
+    ( setof(S, is_blank_resource_in_graph(S, TempGraph), Subjects) ; Subjects = []),
+    foreach(member(X, Subjects), call(ground_bnode, X, TempGraph)), !,
+    ( var(OutGraph) -> rdf_bnode(OutGraph) ; rdf_unload_graph(OutGraph) ),
+    rdf_create_graph(OutGraph),
+    foreach((
+        rdf(S, P, O, TempGraph),
+        instance_of(S, qldarch:'Evincible', TempGraph),
+        \+ instance_of(P, qaat:'AuxProperty', qldarch:'')),
+        call(rdf_assert, S, P, O, OutGraph)), !,
+    rdf_unload_graph(TempGraph).
+
+ground_bnode(S, G) :-
+    findall(C, instance_of(S, C, G), Classes),
+    member(C, Classes) *-> (
+        \+ ( qldarch(Sub, rdfs:subClassOf, C), member(Sub, Classes) ),
+        (
+            (   ifprolog:index(C, '#', _) ->
+                atom_split(C, '#', Fragments),
+                last(Fragments, Fragment)
+            ) ; (
+                atom_split(C, '/', Fragments),
+                last(Fragments, Fragment)
+            )
+        ), !,
+        atomic_list_concat(['http://qldarch.net/rdf/2012-12/resources/', Fragment, '#'], ResourceBase),
+        gensym(ResourceBase, ResourceURI),
+        \+ rdf_resource(ResourceURI),
+        foreach(rdf(S,P,O), call(rdf_update, S, P, O, subject(ResourceURI))),
+        foreach(rdf(S1,P,S), call(rdf_update, S1, P, S, object(ResourceURI)))
+    ) ;
+    true.
+
 % FIXME: TESTS REQUIRED
 entail(S, P, O, G) :-
     rdf(S, P, O, G) ->
     true ;
     (   owl_inverse_of(P, IP),
-        rdf(O, IP, S)
+        rdf(O, IP, S, G)
     ).
 
 %   {?P a owl:SymmetricProperty. ?S ?P ?O} => {?O ?P ?S}.
@@ -223,10 +263,10 @@ entail(Person, RdfType, Architect, G) :-
 %     ?do qldarch:associatedFirm ?firm .
 %     ?do qldarch:depictsBuilding ?building .
 %   } => { ?building qldarch:associatedFirm ?firm } .
-entail(Building, AssociatedFirm, Firm, G) :-
-    rdf_equal(AssociatedFirm, qldarch:associatedFirm),
-    entail(DigitalObject, qldarch:depictsBuilding, Building, G),
-    entail(DigitalObject, AssociatedFirm, Firm, G).
+%entail(Building, AssociatedFirm, Firm, G) :-
+%    rdf_equal(AssociatedFirm, qldarch:associatedFirm),
+%    entail(DigitalObject, qldarch:depictsBuilding, Building, G),
+%    entail(DigitalObject, AssociatedFirm, Firm, G).
 
 %   { ?do a qldarch:DigitalObject .
 %     ?do qldarch:location ?location .
@@ -235,10 +275,9 @@ entail(Building, AssociatedFirm, Firm, G) :-
 %   Note: ?do qldarch:location ?location is exported directly from omeka via D2RQ
 %entail(Building, QALocation, Location, G) :-
 %    rdf_equal(QALocation, qldarch:location),
-%    rdf_equal(DepictsBuilding, qldarch:depictsBuilding),
-%    entail(DigitalObject, QALocation, Location, G),
-%    entail(DigitalObject, DepictsBuilding, Building, G),
-%    instance_of(DigitalObject, qldarch:'DigitalObject'),
+%    rdf(DigitalObject, QALocation, Location, G),
+%    instance_of(DigitalObject, qldarch:'DigitalObject', G),
+%    entail(DigitalObject, qldarch:depictsBuilding, Building, G),
 %    instance_of(Building, qldarch:'Structure').
 
 %   { ?do a qldarch:DigitalObject .
@@ -247,11 +286,8 @@ entail(Building, AssociatedFirm, Firm, G) :-
 %   } => { ?building geo:lat ?lat } .
 %entail(Building, GeoLat, Latitude, G) :-
 %    rdf_equal(GeoLat, geo:lat),
-%    entail(DigitalObject, qaat:latitude, LatitudeOut, G),
-%    as_decimal(LatitudeOut, Latitude),
-%    entail(DigitalObject, qldarch:depictsBuilding, Building, G),
-%    instance_of(DigitalObject, qldarch:'DigitalObject'),
-%    instance_of(Building, qldarch:'Structure').
+%    rdf_equal(QAATLat, qaat:latitude),
+%    entail_latlong(QAATLat, Building, Latitude, G).
 
 %   { ?do a qldarch:DigitalObject .
 %     ?do qaat:longitude ?long .
@@ -259,12 +295,64 @@ entail(Building, AssociatedFirm, Firm, G) :-
 %   } => { ?building geo:long ?long } .
 %entail(Building, GeoLong, Longitude, G) :-
 %    rdf_equal(GeoLong, geo:long),
-%    entail(DigitalObject, qaat:longitude, LongitudeOut, G),
-%    as_decimal(LongitudeOut, Longitude),
-%    entail(DigitalObject, qldarch:depictsBuilding, Building, G),
-%    instance_of(DigitalObject, qldarch:'DigitalObject'),
-%    instance_of(Building, qldarch:'Structure').
+%    rdf_equal(QAATLong, qaat:longitude),
+%    entail_latlong(QAATLong, Building, Longitude, G).
 
+% TODO: Portraits of people have changed since protyping in N3, so they will need
+%   to be done separately.
+
+%   { ?firm a qldarch:Firm .
+%     ?e qaat:reconciledTo ?firm .
+%     ?e qaat:contemporaryTo ?d .
+%     ?st a qaat:SubjectType .
+%     ?st qaat:label "Firm"^^xsd:string .
+%     ?st qaat:subjectType ?d .
+%     ?d a qldarch:Portrait .
+%     ?d qaat:preferredImage "Yes"^^xsd:string .
+%   } => { ?firm qldarch:preferredImage ?d } .
+%entail(Agent, PreferredImage, DigitalObject, G) :-
+%    rdf_equal(PreferredImage, qldarch:preferredImage),
+%    rdf(PE, qaat:contemporaryTo, DigitalObject),
+%    rdf(DigitalObject, qaat:preferredImage, literal('Yes')),
+%    instance_of(DigitalObject, qldarch:'Portrait', G),
+%    rdf(SubjectType, qaat:label, literal('Firm'), G),
+%    rdf(SubjectType, qaat:subjectType, DigitalObject, G),
+%    reconciled_to(PE, Agent, G),
+%    instanceof(Agent, qldarch:'Firm', G).
+
+%  Combine the following two rules to avoid constructing the relationship object
+%  We may want to do that in the future, so leave the option open, but for now
+%  just entail the relationships directly.
+%
+%  { ?rclass rdfs:subClassOf qldarch:Relationship ;
+%      qldarch:impliesRelationship ?impliedPredicate .
+%    [ a ?rclass ;
+%      qldarch:subject ?s ;
+%      qldarch:object ?o ] .
+%  } => {
+%    ?s ?impliedPredicate ?o
+%  } .
+%  
+%  { ?s ?p ?o .
+%    ?p a owl:ObjectProperty ;
+%       qldarch:entailsRelationship ?rclass .
+%    ?rclass rdfs:subClassOf qldarch:Relationship .
+%  } => {
+%    [ a ?rclass ;
+%      qldarch:subject ?s ;
+%      qldarch:object ?o ;
+%      qldarch:evidence [ a qldarch:Evidence ;
+%        rdf:subject ?s ;
+%        rdf:predicate ?p ;
+%        rdf:object ?o ] ] .
+%  } . 
+%entail(S, ImpliedPred, O, G) :-
+%    qldarch(Pred, qldarch:entailsRelationship, RelClass),
+%    instance_of(Pred, owl:'ObjectProperty', G),
+%    is_subclass_of(RelClass, qldarch:'Relationship'),
+%    is_subclass_of(ImplyingRelClass, RelClass),
+%    qldarch(ImplyingRelClass, qldarch:impliesRelationship, ImpliedPred),
+%    rdf(S, Pred, O, G).
 
 %   { ?e qaat:reconciledTo ?person .
 %     ?do a qldarch:Interview .
@@ -408,7 +496,7 @@ reconciled_to_building(PseudoEntity, Building, G) :-
         ) -> true ;
         (   var(Building) ->
             (   create_entity(qldarch:'Structure', Building, G),
-                rdf_assert(Building, qldarch:label, Label, G)
+                rdf_assert(Building, qldarch:label, literal(type(xsd:string, Value)), G)
             ) ;
             fail
         )
@@ -446,8 +534,11 @@ reconciled_to_firm(PseudoEntity, Firm, G) :-
             rdf(Firm, Pred, literal(exact(Value), _FirmName), EntityGraph),
             instance_of(Firm, qldarch:'Firm', EntityGraph)
         ) -> true ;
-        (   create_entity(qldarch:'Firm', Firm, G),
-            rdf_assert(Firm, qldarch:firmName, literal(type(xsd:string, Value)), G)
+        (   var(Firm) ->
+            (   create_entity(qldarch:'Firm', Firm, G),
+                rdf_assert(Firm, qldarch:firmName, literal(type(xsd:string, Value)), G)
+            ) ;
+            fail
         )
     ), !.
 
@@ -467,11 +558,14 @@ reconciled_to_person(PseudoEntity, Person, G) :-
         (   entity_graph(EntityGraph, G),
             match_person_names(Value, Person, EntityGraph)
         ) -> true ;
-        (   create_entity(foaf:'Person', Person, G),
-            % Assume the first space splits the full-name into first- and last-names
-            atom_split_first(Value, ' ', FirstName, LastName),
-            rdf_assert(Person, foaf:firstName, literal(type(xsd:string, FirstName)), G),
-            rdf_assert(Person, foaf:lastName, literal(type(xsd:string, LastName)), G)
+        (   var(Person) ->
+            (   create_entity(foaf:'Person', Person, G),
+                % Assume the first space splits the full-name into first- and last-names
+                atom_split_first(Value, ' ', FirstName, LastName),
+                rdf_assert(Person, foaf:firstName, literal(type(xsd:string, FirstName)), G),
+                rdf_assert(Person, foaf:lastName, literal(type(xsd:string, LastName)), G)
+            ) ;
+            fail
         )
     ), !.
 
@@ -506,10 +600,29 @@ reconciled_to_typology(PseudoEntity, Typology, G) :-
             rdf(Typology, qldarch:label, literal(exact(Value), _), EntityGraph),
             instance_of(Typology, qldarch:'BuildingTypology', EntityGraph)
         ) -> true ;
-        (   create_entity(qldarch:'BuildingTypology', Typology, G),
-            rdf_assert(Typology, qldarch:label, Label, G)
+        (   var(Typology) ->
+            (   create_entity(qldarch:'BuildingTypology', Typology, G),
+                rdf_assert(Typology, qldarch:label, Label, G)
+            ) ;
+            fail
         )
     ), !.
+
+entail_latlong(QAATPred, Building, Latitude, G) :-
+    nonvar(Building), !,
+    entail(DigitalObject, qldarch:depictsBuilding, Building, G),
+    instance_of(Building, qldarch:'Structure', G),
+    instance_of(DigitalObject, qldarch:'DigitalObject', G),
+    rdf(DigitalObject, QAATPred, LatitudeOut, G),
+    as_decimal(LatitudeOut, Latitude).
+
+entail_latlong(QAATPred, Building, Latitude, G) :-
+    var(Building), !,
+    rdf(DigitalObject, QAATPred, LatitudeOut, G),
+    as_decimal(LatitudeOut, Latitude),
+    instance_of(DigitalObject, qldarch:'DigitalObject', G),
+    entail(DigitalObject, qldarch:depictsBuilding, Building, G),
+    instance_of(Building, qldarch:'Structure', G).
 
 create_entity(Type, Entity, G) :-
     ( nonvar(G), var(Entity) ) ->
@@ -517,6 +630,14 @@ create_entity(Type, Entity, G) :-
         rdf_assert(Entity, rdf:type, Type, G)
     ; throw(error(instantiation_error, _)).
         
+instance_of(S, C, G) :-
+    nonvar(S), var(C),
+    empty_nb_set(Set), !,
+    rdf(S, rdf:type, Class, G),
+    is_subclass_of(Class, C),
+    add_nb_set(C, Set, New),
+    New == true.
+
 instance_of(S, C, G) :-
     (nonvar(S) ; nonvar(C)), !,
     rdf(S, rdf:type, Class, G),
@@ -595,6 +716,13 @@ ontology('http://qldarch.net/ns/rdf/2012-06/terms#').
 ontology(S, P, O) :-
     ontology(G),
     rdf(S, P, O, G).
+
+is_blank_resource_in_graph(R, G) :-
+    empty_nb_set(Set),
+    is_resource_in_graph(R, G),
+    rdf_is_bnode(R),
+    add_nb_set(R, Set, New),
+    New == true.
 
 is_resource_in_graph(R, G) :-
     nonvar(R), nonvar(G), !,
