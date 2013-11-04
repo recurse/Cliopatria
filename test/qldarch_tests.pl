@@ -92,16 +92,15 @@ test(direct_subproperty_query, [ set(X == [
     ]).
 
 % Entailment test files
-%etfile('basic.ttl', 'basic_out.ttl').
-%etfile('basic_bnode.ttl', 'basic_bnode_out.ttl').
-%etfile('has_transcript.ttl', 'has_transcript_out.ttl').
+etfile('basic.ttl', 'basic_out.ttl').
+etfile('basic_bnode.ttl', 'basic_bnode_out.ttl').
+etfile('has_transcript.ttl', 'has_transcript_out.ttl').
 etfile('depicts_building.ttl', 'depicts_building_out.ttl').
 
 test(entailment, [
         setup(init_ont),
         cleanup(rdf_reset_db),
         forall(etfile(InFile, OutFile)) ]) :-
-    format('~nRunning test ~w -> ~w', [InFile, OutFile]),
     assertion(atom(InFile)),
     assertion(atom(OutFile)),
     rdf_equal(Test, qaint:test),
@@ -182,7 +181,7 @@ test(reconciliation_fail, [
 
 % Setup predicates
 load_ont :-
-    load_file(test('Qldarch.ttl'), 'http://qldarch.net/ns/rdf/2012-06/terms#', 'http://qldarch.net/ns/rdf/2012-06/terms#').
+    load_file(test('Qldarch.ttl'), 'http://qldarch.net/ns/rdf/2012-06/terms#', 'http://qldarch.net/ns/rdf/2012-06/terms#', [silent(true)]).
 
 % Utility to dump erroneous graphs to user_output
 output_graphs(Expected, Received) :-

@@ -205,11 +205,7 @@ entail(Interview, HasTranscript, ItemURI, G) :-
 
 entail(DigitalObject, QAPred, Entity, G) :-
     % Moved body to avoid split predicate warning.
-    classification(DigitalObject, QAPred, Entity, G) ->
-    format('Entailed classification triple: [~w, ~w, ~w in ~w]~n', [DigitalObject, QAPred, Entity, G]) ;
-    ( format('Failed classification triple: [~w, ~w, ~w in ~w]~n', [DigitalObject, QAPred, Entity, G]),
-        fail
-    ).
+    classification(DigitalObject, QAPred, Entity, G).
 
 % NOTE: If we ever interview anyone who isn't an Architect we can no longer make
 %   this assumption.
@@ -228,28 +224,9 @@ entail(Person, RdfType, Architect, G) :-
 %     ?do qldarch:depictsBuilding ?building .
 %   } => { ?building qldarch:associatedFirm ?firm } .
 entail(Building, AssociatedFirm, Firm, G) :-
-    gensym(entail_assoc_, Unique),
-    format('~ntop-Entail:(~w) [~w, ~w, ~w in ~w]?~n', [Unique, Building, AssociatedFirm, Firm, G]),
-    (entail_assoc(Building, AssociatedFirm, Firm, G) -> 
-    format('top-Entailed: (~w) [~w, ~w, ~w in ~w]~n', [Unique, Building, AssociatedFirm, Firm, G]) ;
-    ( format('top-Failed: (~w) [~w, ~w, ~w in ~w]~n', [Unique, Building, AssociatedFirm, Firm, G]),
-    fail
-    ) ).
-
-entail_assoc(Building, AssociatedFirm, Firm, G) :-
-    format('Predicate check: ~w = ~w~n', [AssociatedFirm, 'qldarch:associatedFirm']),
     rdf_equal(AssociatedFirm, qldarch:associatedFirm),
-    format('rec-first-Entail: [~w, ~w, ~w in ~w]?~n', [DigitalObject, 'qldarch:depictsBuilding', Building, G]),
     entail(DigitalObject, qldarch:depictsBuilding, Building, G),
-    format('rec-first-Entailed: [~w, ~w, ~w in ~w]~n', [DigitalObject, 'qldarch:depictsBuilding', Building, G]),
-    format('rec-second-Entail: [~w, ~w, ~w in ~w]?~n', [DigitalObject, AssociatedFirm, Firm, G]),
-    (entail(DigitalObject, AssociatedFirm, Firm, G) ->
-     format('rec-second-Entailed: [~w, ~w, ~w in ~w]~n', [DigitalObject, AssociatedFirm, Firm, G]) ;
-     (format('rec-second-Failed: [~w, ~w, ~w in ~w]~n', [DigitalObject, AssociatedFirm, Firm, G]),
-      fail
-  ) ).
-
-
+    entail(DigitalObject, AssociatedFirm, Firm, G).
 
 %   { ?do a qldarch:DigitalObject .
 %     ?do qldarch:location ?location .
@@ -327,25 +304,9 @@ entail_assoc(Building, AssociatedFirm, Firm, G) :-
 %     ?e qaat:contemporaryTo ?s .
 %   } => { ?s qldarch:associatedFirm ?firm } .
 classification(DigitalObject, QAPred, Entity, G) :-
-    format('Classifying ~w via ~w to ~w in ~w~n', [DigitalObject, QAPred, Entity, G]),
-    (predicate_pair(QAPred, QAATPred) -> true ; 
-    (   format('Failed to find suitable predicate_pair for ~w <- ~w~n', [QAPred, QAATPred]),
-        fail
-    ) ),
-    format('Trying predicate pair ~w <- ~w~n', [QAPred, QAATPred]),
-    ( ( format('Querying aux predicate ~w, ~w, ~w in ~w~n', [PE, QAATPred, DigitalObject, G]),
-        rdf(PE, QAATPred, DigitalObject, G) ) -> 
-        format('Found aux predicate use ~w, ~w, ~w in ~w~n', [PE, QAATPred, DigitalObject, G]) ;
-        ( format('Failed to find aux predicate use ~w, ~w, ~w in ~w~n', [PE, QAATPred, DigitalObject, G]),
-            fail
-        )),
-    format('Reconciling ~w to ~w~n', [PE, Entity]),
-    (   reconciled_to(PE, Entity, G) -> % Note: reconciled_to does instance_of check.
-        format('Reconciled ~w to ~w~n', [PE, Entity]) ;
-        format('Failed reconcilation of ~w to ~w~n', [PE, Entity]),
-        fail
-    ),
-    format('Classified ~w via ~w to ~w in ~w~n', [DigitalObject, QAPred, Entity, G]).
+    predicate_pair(QAPred, QAATPred),
+    rdf(PE, QAATPred, DigitalObject, G),
+    reconciled_to(PE, Entity, G). % Note: reconciled_to does instance_of check.
     % Consider adding a domain check to the entailment.
 
 % FIXME: TESTS REQUIRED
@@ -409,28 +370,22 @@ convert_item_to_URI(Item, _) :-
 %    rdf(PseudoEntity, qaat:reconciledTo, Entity, G), !.
 
 reconciled_to(PseudoEntity, Entity, G) :-
-    format('Doing PN reconciliation ~w to ~w in ~w~n', [PseudoEntity, Entity, G]),
     instance_of(PseudoEntity, qaat:'ProjectName', G),
-    format('~w is instance of ~w in ~w~n', [PseudoEntity, 'qaat:ProjectName', G]),
     reconciled_to_building(PseudoEntity, Entity, G).
 
 reconciled_to(PseudoEntity, Entity, G) :-
-    format('Doing DT reconciliation ~w to ~w in ~w~n', [PseudoEntity, Entity, G]),
     instance_of(PseudoEntity, qaat:'DrawingType', G),
     reconciled_to_drawing_type(PseudoEntity, Entity, G).
 
 reconciled_to(PseudoEntity, Entity, G) :-
-    format('Doing F reconciliation ~w to ~w in ~w~n', [PseudoEntity, Entity, G]),
     instance_of(PseudoEntity, qaat:'Firm', G),
     reconciled_to_firm(PseudoEntity, Entity, G).
 
 reconciled_to(PseudoEntity, Entity, G) :-
-    format('Doing P reconciliation ~w to ~w in ~w~n', [PseudoEntity, Entity, G]),
     instance_of(PseudoEntity, qaat:'Person', G),
     reconciled_to_person(PseudoEntity, Entity, G).
 
 reconciled_to(PseudoEntity, Entity, G) :-
-    format('Doing BT reconciliation ~w to ~w in ~w~n', [PseudoEntity, Entity, G]),
     instance_of(PseudoEntity, qaat:'BuildingTypology', G),
     reconciled_to_typology(PseudoEntity, Entity, G).
 
@@ -563,24 +518,11 @@ create_entity(Type, Entity, G) :-
     ; throw(error(instantiation_error, _)).
         
 instance_of(S, C, G) :-
-    format('nonvar instance_of: ~W, ~W in ~w~n', [S, [quoted(true)], C, [quoted(true)], G]),
     (nonvar(S) ; nonvar(C)), !,
-    format('Querying rdf(~W, rdf:type, ~W, ~W)~n', [S, [quoted(true)], Class, [quoted(true)], G, [quoted(true)]]),
     rdf(S, rdf:type, Class, G),
-    format('Found rdf(~W, rdf:type, ~W, ~W)~n', [S, [quoted(true)], Class, [quoted(true)], G, [quoted(true)]]),
-    format('is_subclass_of(~W, ~W)~n', [Class, [quoted(true)], C, [quoted(true)]]),
-    (
-        is_subclass_of(Class, C) ->
-        format('Proved is_subclass_of(~W, ~W)~n', [Class, [quoted(true)], C, [quoted(true)]]) ;
-        (
-            format('Falsified is_subclass_of(~W, ~W)~n', [Class, [quoted(true)], C, [quoted(true)]]),
-            fail
-        )
-    ).
-
+    is_subclass_of(Class, C).
 
 instance_of(S, C, G) :-
-    format('var instance_of: ~w, ~w in ~w~n', [S, C, G]),
     is_resource_in_graph(S, G),
     instance_of(S, C, G).
 
