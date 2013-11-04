@@ -652,27 +652,44 @@ instance_of(S, C, G) :-
 
 is_subclass_of(Sub, Super) :-
     nonvar(Sub), nonvar(Super),
-    Sub=Super, !.
+    format('nonvarx2-direct is_subclass_of(~w, ~w)~n', [Sub, Super]),
+    (
+        Sub=Super, !
+    ) ->
+    format('nonvarx2 proved is_subclass_of(~w, ~w)~n', [Sub, Super]) ;
+    format('nonvarx2 failed is_subclass_of(~w, ~w)~n', [Sub, Super]).
 
 is_subclass_of(Sub, Super) :-
     Sub=Super.
 
 is_subclass_of(Sub, Super) :-
-    (nonvar(Sub), nonvar(Super)) ->
-    qldarch(Sub, rdfs:subClassOf, Super), !.
+    (nonvar(Sub), nonvar(Super)),
+    format('nonvarx2 is_subclass_of(~w, ~w)~n', [Sub, Super]),
+    (
+        qldarch(Sub, rdfs:subClassOf, Super), !
+    ) ->
+    format('nonvarx2 proved is_subclass_of(~w, ~w)~n', [Sub, Super]) ;
+    format('nonvarx2 failed is_subclass_of(~w, ~w)~n', [Sub, Super]).
 
 %   {?C rdfs:subClassOf ?D. ?D rdfs:subClassOf ?E} => {?C rdfs:subClassOf ?E}.
 is_subclass_of(Sub, Super) :-
-    (nonvar(Sub) ->
-        qldarch(Sub, rdfs:subClassOf, Mid),
-        is_subclass_of(Mid, Super), !
-    ) ;
-    (nonvar(Super) ->
-        qldarch(Mid, rdfs:subClassOf, Super),
-        is_subclass_of(Sub, Mid), !
-    ) ;
-    qldarch(Sub, rdfs:subClassOf, Mid),
-    is_subclass_of(Mid, Super).
+    format('Final is_subclass_of(~w, ~w)~n', [Sub, Super]),
+    (
+        (nonvar(Sub) ->
+            qldarch(Sub, rdfs:subClassOf, Mid),
+            is_subclass_of(Mid, Super), !
+        ) ;
+        (nonvar(Super) ->
+            qldarch(Mid, rdfs:subClassOf, Super),
+            is_subclass_of(Sub, Mid), !
+        ) ;
+        (   qldarch(Sub, rdfs:subClassOf, Mid),
+            is_subclass_of(Mid, Super)
+        )
+    ) ->
+    format('Final proved is_subclass_of(~w, ~w)~n', [Sub, Super]) ;
+    format('Final failed is_subclass_of(~w, ~w)~n', [Sub, Super]).
+
 
 is_subproperty_of(Sub, Super) :-
     nonvar(Sub), nonvar(Super),
