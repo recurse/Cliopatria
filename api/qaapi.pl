@@ -37,6 +37,7 @@ This module provides qldarch ingest support.
     create_entity(r,r,r),
     is_subclass_of(r,r),
     is_subproperty_of(r,r),
+    classification(r,r,r,r),
     load_file(+,r),
     load_file(+,r,r),
     load_file(+,r,r,+),
@@ -263,40 +264,40 @@ entail(Person, RdfType, Architect, G) :-
 %     ?do qldarch:associatedFirm ?firm .
 %     ?do qldarch:depictsBuilding ?building .
 %   } => { ?building qldarch:associatedFirm ?firm } .
-%entail(Building, AssociatedFirm, Firm, G) :-
-%    rdf_equal(AssociatedFirm, qldarch:associatedFirm),
-%    entail(DigitalObject, qldarch:depictsBuilding, Building, G),
-%    entail(DigitalObject, AssociatedFirm, Firm, G).
+entail(Building, AssociatedFirm, Firm, G) :-
+    rdf_equal(AssociatedFirm, qldarch:associatedFirm),
+    classification(DigitalObject, qldarch:depictsBuilding, Building, G),
+    entail(DigitalObject, AssociatedFirm, Firm, G).
 
 %   { ?do a qldarch:DigitalObject .
 %     ?do qldarch:location ?location .
 %     ?do qldarch:depictsBuilding ?building .
 %   } => { ?building qldarch:location ?location } .
 %   Note: ?do qldarch:location ?location is exported directly from omeka via D2RQ
-%entail(Building, QALocation, Location, G) :-
-%    rdf_equal(QALocation, qldarch:location),
-%    rdf(DigitalObject, QALocation, Location, G),
-%    instance_of(DigitalObject, qldarch:'DigitalObject', G),
-%    entail(DigitalObject, qldarch:depictsBuilding, Building, G),
-%    instance_of(Building, qldarch:'Structure').
+entail(Building, QALocation, Location, G) :-
+    rdf_equal(QALocation, qldarch:location),
+    rdf(DigitalObject, QALocation, Location, G),
+    instance_of(DigitalObject, qldarch:'DigitalObject', G),
+    classification(DigitalObject, qldarch:depictsBuilding, Building, G),
+    instance_of(Building, qldarch:'Structure', G).
 
 %   { ?do a qldarch:DigitalObject .
 %     ?do qaat:latitude ?lat .
 %     ?do qldarch:depictsBuilding ?building .
 %   } => { ?building geo:lat ?lat } .
-%entail(Building, GeoLat, Latitude, G) :-
-%    rdf_equal(GeoLat, geo:lat),
-%    rdf_equal(QAATLat, qaat:latitude),
-%    entail_latlong(QAATLat, Building, Latitude, G).
+entail(Building, GeoLat, Latitude, G) :-
+    rdf_equal(GeoLat, geo:lat),
+    rdf_equal(QAATLat, qaat:latitude),
+    entail_latlong(QAATLat, Building, Latitude, G).
 
 %   { ?do a qldarch:DigitalObject .
 %     ?do qaat:longitude ?long .
 %     ?do qldarch:depictsBuilding ?building .
 %   } => { ?building geo:long ?long } .
-%entail(Building, GeoLong, Longitude, G) :-
-%    rdf_equal(GeoLong, geo:long),
-%    rdf_equal(QAATLong, qaat:longitude),
-%    entail_latlong(QAATLong, Building, Longitude, G).
+entail(Building, GeoLong, Longitude, G) :-
+    rdf_equal(GeoLong, geo:long),
+    rdf_equal(QAATLong, qaat:longitude),
+    entail_latlong(QAATLong, Building, Longitude, G).
 
 % TODO: Portraits of people have changed since protyping in N3, so they will need
 %   to be done separately.
@@ -610,7 +611,7 @@ reconciled_to_typology(PseudoEntity, Typology, G) :-
 
 entail_latlong(QAATPred, Building, Latitude, G) :-
     nonvar(Building), !,
-    entail(DigitalObject, qldarch:depictsBuilding, Building, G),
+    classification(DigitalObject, qldarch:depictsBuilding, Building, G),
     instance_of(Building, qldarch:'Structure', G),
     instance_of(DigitalObject, qldarch:'DigitalObject', G),
     rdf(DigitalObject, QAATPred, LatitudeOut, G),
@@ -621,7 +622,7 @@ entail_latlong(QAATPred, Building, Latitude, G) :-
     rdf(DigitalObject, QAATPred, LatitudeOut, G),
     as_decimal(LatitudeOut, Latitude),
     instance_of(DigitalObject, qldarch:'DigitalObject', G),
-    entail(DigitalObject, qldarch:depictsBuilding, Building, G),
+    classification(DigitalObject, qldarch:depictsBuilding, Building, G),
     instance_of(Building, qldarch:'Structure', G).
 
 create_entity(Type, Entity, G) :-
@@ -767,17 +768,19 @@ is_object_in_graph(O, G) :-
 
 as_decimal(type(_, Raw), Out) :-
     !, atom_number(Raw, _),
-    Out = type(xsd:decimal, Raw).
+    rdf_equal(XSDDecimal, xsd:decimal),
+    Out = literal(type(XSDDecimal, Raw)).
 
 as_decimal(lang(_,_), _) :-
     !, fail.
 
 as_decimal(literal(In), Out) :-
-    as_decimal(In, Out).
+    !, as_decimal(In, Out).
 
 as_decimal(In, Out) :-
     atom_number(In, _),
-    Out = type(xsd:decimal, In).
+    rdf_equal(XSDDecimal, xsd:decimal),
+    Out = literal(type(XSDDecimal, In)).
 
 entity_graph(EntityGraph) :-
     rdf_equal(Catalogue, qacatalog:''),
