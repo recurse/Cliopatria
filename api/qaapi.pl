@@ -347,7 +347,7 @@ entail(Agent, PreferredImage, DigitalObject, G) :-
 %        rdf:predicate ?p ;
 %        rdf:object ?o ] ] .
 %  } . 
-entail(S, ImpliedPred, O, G) :-
+related_to(S, ImpliedPred, O, G) :-
     qldarch(Pred, qldarch:entailsRelationship, RelClass),
     instance_of(Pred, owl:'ObjectProperty', qldarch:''),
     is_subclass_of(RelClass, qldarch:'Relationship'),
