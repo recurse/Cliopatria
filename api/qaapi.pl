@@ -311,15 +311,15 @@ entail(Building, GeoLong, Longitude, G) :-
 %     ?d a qldarch:Portrait .
 %     ?d qaat:preferredImage "Yes"^^xsd:string .
 %   } => { ?firm qldarch:preferredImage ?d } .
-%entail(Agent, PreferredImage, DigitalObject, G) :-
-%    rdf_equal(PreferredImage, qldarch:preferredImage),
-%    rdf(PE, qaat:contemporaryTo, DigitalObject),
-%    rdf(DigitalObject, qaat:preferredImage, literal('Yes')),
-%    instance_of(DigitalObject, qldarch:'Portrait', G),
-%    rdf(SubjectType, qaat:label, literal('Firm'), G),
-%    rdf(SubjectType, qaat:subjectType, DigitalObject, G),
-%    reconciled_to(PE, Agent, G),
-%    instanceof(Agent, qldarch:'Firm', G).
+entail(Agent, PreferredImage, DigitalObject, G) :-
+    rdf_equal(PreferredImage, qldarch:preferredImage),
+    rdf(PE, qaat:contemporaryTo, DigitalObject),
+    rdf(DigitalObject, qaat:preferredImage, literal('Yes')),
+    instance_of(DigitalObject, qldarch:'Portrait', G),
+    rdf(SubjectType, qaat:label, literal('Firm'), G),
+    rdf(SubjectType, qaat:subjectType, DigitalObject, G),
+    reconciled_to(PE, Agent, G),
+    instance_of(Agent, qldarch:'Firm', G).
 
 %  Combine the following two rules to avoid constructing the relationship object
 %  We may want to do that in the future, so leave the option open, but for now
@@ -347,13 +347,13 @@ entail(Building, GeoLong, Longitude, G) :-
 %        rdf:predicate ?p ;
 %        rdf:object ?o ] ] .
 %  } . 
-%entail(S, ImpliedPred, O, G) :-
-%    qldarch(Pred, qldarch:entailsRelationship, RelClass),
-%    instance_of(Pred, owl:'ObjectProperty', G),
-%    is_subclass_of(RelClass, qldarch:'Relationship'),
-%    is_subclass_of(ImplyingRelClass, RelClass),
-%    qldarch(ImplyingRelClass, qldarch:impliesRelationship, ImpliedPred),
-%    rdf(S, Pred, O, G).
+entail(S, ImpliedPred, O, G) :-
+    qldarch(Pred, qldarch:entailsRelationship, RelClass),
+    instance_of(Pred, owl:'ObjectProperty', qldarch:''),
+    is_subclass_of(RelClass, qldarch:'Relationship'),
+    is_subclass_of(ImplyingRelClass, RelClass),
+    qldarch(ImplyingRelClass, qldarch:impliesRelationship, ImpliedPred),
+    entail(S, Pred, O, G).
 
 %   { ?e qaat:reconciledTo ?person .
 %     ?do a qldarch:Interview .
