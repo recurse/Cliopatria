@@ -91,7 +91,9 @@ ingest(Filename, Graph) :-
     load_file(Filename, LoadGraph),
     format(atom(CleanGraph), '~a~a', [BaseURI, '/graph#clean']),
     cleanGraph(LoadGraph, CleanGraph),
-    readGraph(CleanGraph, Graph).
+    format(atom(ResultGraph), '~a~a', [BaseURI, '/graph#result']),
+    entailment(CleanGraph, ResultGraph),
+    readGraph(ResultGraph, Graph).
 
 %%  atom_split(+In, +Sep, -Head, -Tail) is det
 %
@@ -156,7 +158,7 @@ normalizeNode(Node, NormNode) :-
         iri_normalized(Node, NormNode).
 
 readGraph(GraphURI, Graph) :-
-    findall(rdf(S,P,O), entail(S, P, O, GraphURI), Graph).
+    findall(rdf(S,P,O), rdf(S, P, O, GraphURI), Graph).
 
 clean(S, P, O, G) :-
     rdf(S, P, O, G),
