@@ -182,7 +182,7 @@ test(reconciliation_fail, [
 
 % Setup predicates
 load_ont :-
-    load_file(test('Qldarch.ttl'), qldarch:'', _, [silent(true)]).
+    load_file(test('Qldarch.ttl'), 'http://qldarch.net/ns/rdf/2012-06/terms#', 'http://qldarch.net/ns/rdf/2012-06/terms#').
 
 % Utility to dump erroneous graphs to user_output
 output_graphs(Expected, Received) :-
