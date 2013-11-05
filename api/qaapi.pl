@@ -34,14 +34,17 @@ This module provides qldarch ingest support.
     entail(r,r,?,r),
     qldarch(o,o,o),
     reconciled_to(r,r,r),
+    logged_reconciled_to(r,r,r),
     create_entity(r,r,r),
     is_subclass_of(r,r),
+    logged_is_subclass_of(r,r),
     is_subproperty_of(r,r),
     classification(r,r,r,r),
     load_file(+,r),
     load_file(+,r,r),
     load_file(+,r,r,+),
     is_resource_in_graph(r,r),
+    logged_instance_of(r,r,r),
     instance_of(r,r,r).
 
 :- rdf_register_ns('qldarch', 'http://qldarch.net/ns/rdf/2012-06/terms#').
@@ -72,6 +75,20 @@ This module provides qldarch ingest support.
 %		a description of the various descriptions
 %	@bug	Currently only supports =cbd=.
 
+qldarch_ns(NS) :-
+    rdf_equal(qldarch:'', NS).
+
+qldarch_ns(In, Out) :-
+    qldarch_ns(QA),
+    atom_concat(QA, In, Out).
+
+qaat_ns(NS) :-
+    rdf_equal(qaat:'', NS).
+    
+qaat_ns(In, Out) :-
+    qaat_ns(QAAT),
+    atom_concat(QAAT, In, Out).
+    
 load_omeka(Request) :-
 	http_parameters(Request,
 			[ filename(Filename,
@@ -179,8 +196,11 @@ entailment(Graph, OutGraph) :-
     rdf_create_graph(OutGraph),
     foreach((
         rdf(S, P, O, TempGraph),
-        instance_of(S, qldarch:'Evincible', TempGraph),
-        \+ instance_of(P, qaat:'AuxProperty', qldarch:'')),
+        qldarch_ns('Evincible', QAEvincible),
+        instance_of(S, QAEvincible, TempGraph),
+        qldarch_ns(Qldarch),
+        qaat_ns('AuxProperty', AuxProperty),
+        \+ instance_of(P, AuxProperty, Qldarch)),
         call(rdf_assert, S, P, O, OutGraph)), !,
     rdf_unload_graph(TempGraph).
 
@@ -460,6 +480,26 @@ convert_item_to_URI(Item, _) :-
 %    atom(PseudoEntity), atom(Entity),
 %    rdf(PseudoEntity, qaat:reconciledTo, Entity, G), !.
 
+logged_reconciled_to(PseudoEntity, Entity, G) :-
+    logged_instance_of(PseudoEntity, qaat:'ProjectName', G),
+    reconciled_to_building(PseudoEntity, Entity, G).
+
+logged_reconciled_to(PseudoEntity, Entity, G) :-
+    logged_instance_of(PseudoEntity, qaat:'DrawingType', G),
+    reconciled_to_drawing_type(PseudoEntity, Entity, G).
+
+logged_reconciled_to(PseudoEntity, Entity, G) :-
+    logged_instance_of(PseudoEntity, qaat:'Firm', G),
+    reconciled_to_firm(PseudoEntity, Entity, G).
+
+logged_reconciled_to(PseudoEntity, Entity, G) :-
+    logged_instance_of(PseudoEntity, qaat:'Person', G),
+    reconciled_to_person(PseudoEntity, Entity, G).
+
+logged_reconciled_to(PseudoEntity, Entity, G) :-
+    logged_instance_of(PseudoEntity, qaat:'BuildingTypology', G),
+    reconciled_to_typology(PseudoEntity, Entity, G).
+
 reconciled_to(PseudoEntity, Entity, G) :-
     instance_of(PseudoEntity, qaat:'ProjectName', G),
     reconciled_to_building(PseudoEntity, Entity, G).
@@ -479,6 +519,137 @@ reconciled_to(PseudoEntity, Entity, G) :-
 reconciled_to(PseudoEntity, Entity, G) :-
     instance_of(PseudoEntity, qaat:'BuildingTypology', G),
     reconciled_to_typology(PseudoEntity, Entity, G).
+
+%   { ?e a qaat:ProjectName .
+%     ?e qaat:label ?l .
+%     ?building a qldarch:Structure .
+%     ?building qldarch:label ?buildinglabel .
+%     ?l str:equalIgnoringCase ?buildinglabel .
+%   } => { ?e qaat:reconciledTo ?building } . 
+logged_reconciled_to_building(PseudoEntity, Building, G) :-
+    atom(PseudoEntity),
+    rdf(PseudoEntity, qaat:label, Label, G),
+    label_value(Label, Value),
+    (   
+        (   entity_graph(EntityGraph, G),
+            (   
+                rdf(Building, qldarch:label, literal(exact(Value), _), EntityGraph),
+                logged_instance_of(Building, qldarch:'Structure', EntityGraph)
+            )
+        ) -> true ;
+        (   var(Building) ->
+            (   create_entity(qldarch:'Structure', Building, G),
+                rdf_assert(Building, qldarch:label, literal(type(xsd:string, Value)), G)
+            ) ;
+            fail
+        )
+    ),
+    !.
+
+%   { ?e a qaat:DrawingType .
+%     ?e qaat:label ?label .
+%     ?type a skos:Concept .
+%     ?type skos:inScheme qavocab:DrawingType .
+%     ?type qldarch:label ?typelabel .
+%     ?label str:equalIgnoringCase ?typelabel .
+%   } => { ?e qaat:reconciledTo ?type } . 
+logged_reconciled_to_drawing_type(PseudoEntity, DrawingType, G) :-
+    atom(PseudoEntity),
+    rdf(PseudoEntity, qaat:label, Label, G),
+    label_value(Label, Value),
+    qldarch(DrawingType, qldarch:label, literal(exact(Value), _)),
+    qldarch(DrawingType, skos:inScheme, qavocab:'DrawingTypes'),
+    logged_instance_of(DrawingType, skos:'Concept', qldarch:''), !.
+
+%   { ?e a qaat:Firm .
+%     ?e qaat:label ?l .
+%     ?firm a qldarch:Firm .
+%     ?firm rdfs:label ?firmName .
+%     ?l str:equalIgnoringCase ?firmName .
+%   } => { ?e qaat:reconciledTo ?firm } .
+logged_reconciled_to_firm(PseudoEntity, Firm, G) :-
+    atom(PseudoEntity),
+    rdf(PseudoEntity, qaat:label, Label, G),
+    label_value(Label, Value),
+    (   
+        (   entity_graph(EntityGraph, G),
+            is_subproperty_of(Pred, rdfs:label),
+            rdf(Firm, Pred, literal(exact(Value), _FirmName), EntityGraph),
+            logged_instance_of(Firm, qldarch:'Firm', EntityGraph)
+        ) -> true ;
+        (   var(Firm) ->
+            (   create_entity(qldarch:'Firm', Firm, G),
+                rdf_assert(Firm, qldarch:firmName, literal(type(xsd:string, Value)), G)
+            ) ;
+            fail
+        )
+    ), !.
+
+%   { ?e a qaat:Person .
+%     ?e qaat:label ?l .
+%     ?person a foaf:Person .
+%     ?person foaf:firstName ?fn .
+%     ?person foaf:lastName ?ln .
+%     ?l str:containsIgnoringCase ?fn .
+%     ?l str:containsIgnoringCase ?ln .
+%   } => { ?e qaat:reconciledTo ?person } .
+logged_reconciled_to_person(PseudoEntity, Person, G) :-
+    atom(PseudoEntity),
+    rdf(PseudoEntity, qaat:label, Label, G),
+    label_value(Label, Value),
+    (
+        (   entity_graph(EntityGraph, G),
+            logged_match_person_names(Value, Person, EntityGraph)
+        ) -> true ;
+        (   var(Person) ->
+            (   create_entity(foaf:'Person', Person, G),
+                % Assume the first space splits the full-name into first- and last-names
+                atom_split_first(Value, ' ', FirstName, LastName),
+                rdf_assert(Person, foaf:firstName, literal(type(xsd:string, FirstName)), G),
+                rdf_assert(Person, foaf:lastName, literal(type(xsd:string, LastName)), G)
+            ) ;
+            fail
+        )
+    ), !.
+
+logged_match_person_names(FullName, Person, EntityGraph) :-
+    % Try various splits against foaf:firstName
+    atom_split(FullName, ' ', FNPrefix, _),
+    rdf(Person, foaf:firstName, literal(prefix(FNPrefix), FirstName), EntityGraph),
+    label_value(literal(FirstName), FNValue),
+    % The suffix of the fullname from the first-name + space is the last-name
+    atom_length(FNValue, FNLength),
+    FNSLength is FNLength + 1,
+    sub_atom(FullName, FNSLength, _, 0, LastName),
+    %    atom_split(FullName, FNSPrefix, _, LastName),
+    rdf(Person, foaf:lastName, literal(exact(LastName), _), EntityGraph),
+    % Domain and Range should ensure this, but double check anyway as Firms and People
+    % sometimes share names
+    logged_instance_of(Person, foaf:'Person', EntityGraph),
+    !.
+
+%   { ?e a qaat:BuildingTypology .
+%     ?e qaat:label ?label .
+%     ?type a qldarch:BuildingTypology .
+%     ?type qldarch:label ?typelabel .
+%     ?label str:equalIgnoringCase ?typelabel .
+%   } => { ?e qaat:reconciledTo ?type } .
+logged_reconciled_to_typology(PseudoEntity, Typology, G) :-
+    atom(PseudoEntity),
+    rdf(PseudoEntity, qaat:label, Label, G),
+    label_value(Label, Value),
+    (   
+        (   entity_graph(EntityGraph, G),
+            rdf(Typology, qldarch:label, literal(exact(Value), _), EntityGraph),
+            logged_instance_of(Typology, qldarch:'BuildingTypology', EntityGraph)
+        ) -> true ;
+        (   var(Typology) ->
+            (   create_entity(qldarch:'BuildingTypology', Typology, G),
+                rdf_assert(Typology, qldarch:label, Label, G)
+            ) ;
+            fail
+        )
+    ), !.
 
 %   { ?e a qaat:ProjectName .
 %     ?e qaat:label ?l .
@@ -652,43 +823,68 @@ instance_of(S, C, G) :-
 
 is_subclass_of(Sub, Super) :-
     nonvar(Sub), nonvar(Super),
-    format('nonvarx2-direct is_subclass_of(~w, ~w)~n', [Sub, Super]),
-    (
-        Sub=Super, !
-    ) ->
-    format('nonvarx2 proved is_subclass_of(~w, ~w)~n', [Sub, Super]) ;
-    format('nonvarx2 failed is_subclass_of(~w, ~w)~n', [Sub, Super]).
-
-is_subclass_of(Sub, Super) :-
-    Sub=Super.
+    Sub=Super, !.
 
 is_subclass_of(Sub, Super) :-
     (nonvar(Sub), nonvar(Super)),
-    format('nonvarx2 is_subclass_of(~w, ~w)~n', [Sub, Super]),
-    (
-        qldarch(Sub, rdfs:subClassOf, Super), !
-    ) ->
-    format('nonvarx2 proved is_subclass_of(~w, ~w)~n', [Sub, Super]) ;
-    format('nonvarx2 failed is_subclass_of(~w, ~w)~n', [Sub, Super]).
+    qldarch(Sub, rdfs:subClassOf, Super), !.
 
 %   {?C rdfs:subClassOf ?D. ?D rdfs:subClassOf ?E} => {?C rdfs:subClassOf ?E}.
 is_subclass_of(Sub, Super) :-
-    format('Final is_subclass_of(~w, ~w)~n', [Sub, Super]),
-    (
-        (nonvar(Sub) ->
-            qldarch(Sub, rdfs:subClassOf, Mid),
-            is_subclass_of(Mid, Super), !
-        ) ;
-        (nonvar(Super) ->
-            qldarch(Mid, rdfs:subClassOf, Super),
-            is_subclass_of(Sub, Mid), !
-        ) ;
-        (   qldarch(Sub, rdfs:subClassOf, Mid),
-            is_subclass_of(Mid, Super)
+    (nonvar(Sub) ->
+        (   Sub = Super ;
+            (
+                qldarch(Sub, rdfs:subClassOf, Mid),
+                is_subclass_of(Mid, Super)
+            )
         )
-    ) ->
-    format('Final proved is_subclass_of(~w, ~w)~n', [Sub, Super]) ;
-    format('Final failed is_subclass_of(~w, ~w)~n', [Sub, Super]).
+    ) ;
+    (nonvar(Super) ->
+        (   Sub = Super ;
+            (
+                qldarch(Mid, rdfs:subClassOf, Super),
+                is_subclass_of(Sub, Mid)
+            )
+        )
+    ) ;
+    (   var(Sub), var(Super),
+        qldarch_ns(Qldarch),
+        instance_of(Sub, rdfs:'Class', Qldarch),
+        is_subclass_of(Sub, Super)
+    ).
+
+is_subproperty_of(Sub, Super) :-
+    nonvar(Sub), nonvar(Super),
+    Sub=Super, !.
+
+is_subproperty_of(Sub, Super) :-
+    (nonvar(Sub), nonvar(Super)),
+    qldarch(Sub, rdfs:subPropertyOf, Super), !.
+
+%   {?C rdfs:subClassOf ?D. ?D rdfs:subClassOf ?E} => {?C rdfs:subClassOf ?E}.
+is_subproperty_of(Sub, Super) :-
+    (nonvar(Sub) ->
+        (   Sub = Super ;
+            (
+                qldarch(Sub, rdfs:subPropertyOf, Mid),
+                is_subclass_of(Mid, Super)
+            )
+        )
+    ) ;
+    (nonvar(Super) ->
+        (   Sub = Super ;
+            (
+                qldarch(Mid, rdfs:subPropertyOf, Super),
+                is_subclass_of(Sub, Mid)
+            )
+        )
+    ) ;
+    (   var(Sub), var(Super),
+        qldarch_ns(Qldarch),
+        instance_of(Sub, rdf:'Property', Qldarch),
+        is_subproperty_of(Sub, Super)
+    ).
+
 
 
 is_subproperty_of(Sub, Super) :-
