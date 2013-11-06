@@ -3,6 +3,8 @@
         is_subclass_of/2,
         is_subproperty_of/2,
         is_resource_in_graph/2,
+        ontology/1,
+        ontology/3,
         load_file/2,
         load_file/3,
         load_file/4,
@@ -43,6 +45,8 @@ This module provides qldarch ingest support.
     load_file(+,r),
     load_file(+,r,r),
     load_file(+,r,r,+),
+    ontology(r,r,o),
+    ontology(r),
     is_resource_in_graph(r,r),
     logged_instance_of(r,r,r),
     instance_of(r,r,r).
@@ -827,14 +831,21 @@ is_subclass_of(Sub, Super) :-
 
 is_subclass_of(Sub, Super) :-
     (nonvar(Sub), nonvar(Super)),
-    qldarch(Sub, rdfs:subClassOf, Super), !.
+    (
+        ontology(Sub, rdfs:subClassOf, Super) ;
+        ( % This clause is not required for correctness, but allows the cut to eliminate
+          % the choicepoint left by the general clause below.
+            is_subclass_of(Sub, Class),
+            Class = Super
+        )
+    ), !.
 
 %   {?C rdfs:subClassOf ?D. ?D rdfs:subClassOf ?E} => {?C rdfs:subClassOf ?E}.
 is_subclass_of(Sub, Super) :-
     (nonvar(Sub) ->
         (   Sub = Super ;
             (
-                qldarch(Sub, rdfs:subClassOf, Mid),
+                ontology(Sub, rdfs:subClassOf, Mid),
                 is_subclass_of(Mid, Super)
             )
         )
@@ -842,14 +853,14 @@ is_subclass_of(Sub, Super) :-
     (nonvar(Super) ->
         (   Sub = Super ;
             (
-                qldarch(Mid, rdfs:subClassOf, Super),
+                ontology(Mid, rdfs:subClassOf, Super),
                 is_subclass_of(Sub, Mid)
             )
         )
     ) ;
     (   var(Sub), var(Super),
-        qldarch_ns(Qldarch),
-        instance_of(Sub, rdfs:'Class', Qldarch),
+        ontology(Ontology),
+        instance_of(Sub, rdfs:'Class', Ontology),
         is_subclass_of(Sub, Super)
     ).
 
@@ -859,29 +870,36 @@ is_subproperty_of(Sub, Super) :-
 
 is_subproperty_of(Sub, Super) :-
     (nonvar(Sub), nonvar(Super)),
-    qldarch(Sub, rdfs:subPropertyOf, Super), !.
+    (
+        ontology(Sub, rdfs:subPropertyOf, Super) ;
+        ( % This clause is not required for correctness, but allows the cut to eliminate
+          % the choicepoint left by the general clause below.
+            is_subproperty_of(Sub, Property),
+            Property = Super
+        )
+    ), !.
 
 %   {?C rdfs:subClassOf ?D. ?D rdfs:subClassOf ?E} => {?C rdfs:subClassOf ?E}.
 is_subproperty_of(Sub, Super) :-
     (nonvar(Sub) ->
         (   Sub = Super ;
             (
-                qldarch(Sub, rdfs:subPropertyOf, Mid),
-                is_subclass_of(Mid, Super)
+                ontology(Sub, rdfs:subPropertyOf, Mid),
+                is_subproperty_of(Mid, Super)
             )
         )
     ) ;
     (nonvar(Super) ->
         (   Sub = Super ;
             (
-                qldarch(Mid, rdfs:subPropertyOf, Super),
-                is_subclass_of(Sub, Mid)
+                ontology(Mid, rdfs:subPropertyOf, Super),
+                is_subproperty_of(Sub, Mid)
             )
         )
     ) ;
     (   var(Sub), var(Super),
-        qldarch_ns(Qldarch),
-        instance_of(Sub, rdf:'Property', Qldarch),
+        ontology(Ontology),
+        instance_of(Sub, rdf:'Property', Ontology),
         is_subproperty_of(Sub, Super)
     ).
 
@@ -896,33 +914,33 @@ is_subproperty_of(Sub, Super) :-
 
 is_subproperty_of(Sub, Super) :-
     (nonvar(Sub), nonvar(Super)) ->
-    qldarch(Sub, rdfs:subPropertyOf, Super), !.
+    ontology(Sub, rdfs:subPropertyOf, Super), !.
 
 %   {?C rdfs:subClassOf ?D. ?D rdfs:subClassOf ?E} => {?C rdfs:subClassOf ?E}.
 is_subproperty_of(Sub, Super) :-
     (nonvar(Sub) *->
-        qldarch(Sub, rdfs:subPropertyOf, Mid),
+        ontology(Sub, rdfs:subPropertyOf, Mid),
         is_subproperty_of(Mid, Super)
     ) ;
     (nonvar(Super) *->
-        qldarch(Mid, rdfs:subPropertyOf, Super),
+        ontology(Mid, rdfs:subPropertyOf, Super),
         is_subproperty_of(Sub, Mid)
     ) ;
     (
-        qldarch(Sub, rdfs:subPropertyOf, Mid),
+        ontology(Sub, rdfs:subPropertyOf, Mid),
         is_subproperty_of(Mid, Super)
     ).
 
 owl_inverse_of(Property, InverseProperty) :-
-    qldarch(Property, owl:inverseOf, InverseProperty) ->
+    ontology(Property, owl:inverseOf, InverseProperty) ->
     true ;
-    qldarch(InverseProperty, owl:inverseOf, Property).
+    ontology(InverseProperty, owl:inverseOf, Property).
 
 domain(Predicate, Domain) :-
-    qldarch(Predicate, rdfs:domain, Domain).
+    ontology(Predicate, rdfs:domain, Domain).
     
 range(Predicate, Range) :-
-    qldarch(Predicate, rdfs:range, Range).
+    ontology(Predicate, rdfs:range, Range).
 
 qldarch(S, P, O) :-
     rdf(S, P, O, 'http://qldarch.net/ns/rdf/2012-06/terms#').

@@ -5,8 +5,8 @@
 
 # qaat:PseudoEntity obtained via subclass entailment.
 
-qaomeka:1 a qaat:BuildingTypology, qaat:PseudoEntity ;
+qaomeka:1 a qaat:BuildingTypology, qaat:PseudoEntity, qaat:AuxClass ;
   qaat:label "Commercial buildings" .
 
-_:2 a qaat:BuildingTypology, qaat:PseudoEntity ;
+_:2 a qaat:BuildingTypology, qaat:PseudoEntity, qaat:AuxClass ;
   qaat:label "Dwellings" .

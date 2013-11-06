@@ -3,6 +3,7 @@
 @prefix qldarch: <http://qldarch.net/ns/rdf/2012-06/terms#> .
 @prefix    qaat: <http://qldarch.net/ns/omeka/2012-11/auxterms#> .
 @prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix    frbr: <http://purl.org/vocab/frbr/core#> .
 
 # Named toplevel resources (4)
 
@@ -26,7 +27,10 @@
 	a qldarch:DigitalObject ,
 	  qldarch:DigitalThing ,
 	  qldarch:Image ,
-	  qldarch:Photograph ;
+	  qldarch:Photograph ,
+      frbr:Expression,
+      qldarch:Entity ,
+      qldarch:Evincible ;
     dcterms:created "2012-09"^^xsd:string ;
     dcterms:title "Gladstone Civic Centre, 0001 Under construction - View from opposite side of Goondoon St."^^xsd:string ;
 	qldarch:depictsBuilding [ a qldarch:Structure ;
@@ -37,7 +41,10 @@
 	a qldarch:DigitalObject ,
 	  qldarch:DigitalThing ,
 	  qldarch:Image ,
-	  qldarch:Photograph ;
+	  qldarch:Photograph ,
+      frbr:Expression,
+      qldarch:Entity ,
+      qldarch:Evincible ;
     dcterms:created "2012-09"^^xsd:string ;
     dcterms:title "Dummy Photograph"^^xsd:string ;
 	qldarch:depictsBuilding [ a qldarch:Structure ;

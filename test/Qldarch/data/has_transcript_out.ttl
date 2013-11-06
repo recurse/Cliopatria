@@ -3,11 +3,15 @@
 @prefix qldarch: <http://qldarch.net/ns/rdf/2012-06/terms#> .
 @prefix    qaat: <http://qldarch.net/ns/omeka/2012-11/auxterms#> .
 @prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix    frbr: <http://purl.org/vocab/frbr/core#> .
 
 <http://qldarch.net/omeka/items/show/1764>
     a qldarch:DigitalObject ,
       qldarch:DigitalThing ,
-      qldarch:Transcript ;
+      qldarch:Transcript ,
+      frbr:Expression,
+      qldarch:Entity ,
+      qldarch:Evincible ;
     dcterms:created "2012-07-13"^^xsd:string ;
     dcterms:description "Transcription of the interview with James Birrell"^^xsd:string ;
     dcterms:title "James Birrell interview transcript"^^xsd:string ;
@@ -16,7 +20,10 @@
 <http://qldarch.net/omeka/items/show/1765>
     a qldarch:DigitalObject ,
       qldarch:DigitalThing ,
-      qldarch:Transcript ;
+      qldarch:Transcript ,
+      frbr:Expression,
+      qldarch:Entity ,
+      qldarch:Evincible ;
     dcterms:created "2012-07-13"^^xsd:string ;
     dcterms:description "Transcription of another interview with James Birrell"^^xsd:string ;
     dcterms:title "Another Birrell interview transcript"^^xsd:string ;
@@ -25,7 +32,10 @@
 <http://qldarch.net/omeka/items/show/8>
     a qldarch:DigitalObject ,
       qldarch:DigitalThing ,
-      qldarch:Interview ;
+      qldarch:Interview ,
+      frbr:Expression,
+      qldarch:Entity ,
+      qldarch:Evincible ;
     dcterms:title "James Birrell interview"^^xsd:string ;
     qaat:transcriptItem "http://qldarch.net/omeka/admin/items/show/1764"^^xsd:string ;
     qldarch:hasTranscript <http://qldarch.net/omeka/items/show/1764> ;
@@ -34,7 +44,10 @@
 <http://qldarch.net/omeka/items/show/9>
     a qldarch:DigitalObject ,
       qldarch:DigitalThing ,
-      qldarch:Interview ;
+      qldarch:Interview ,
+      frbr:Expression,
+      qldarch:Entity ,
+      qldarch:Evincible ;
     dcterms:title "Another Birrell interview"^^xsd:string ;
     qaat:transcriptItem "http://qldarch.net/omeka/items/show/1765"^^xsd:string ;
     qldarch:hasTranscript <http://qldarch.net/omeka/items/show/1765> ;

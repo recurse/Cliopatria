@@ -86,21 +86,21 @@ test(direct_subproperty_query, [ set(X == [
 
 :- end_tests(qldarch).
 
+e_files('basic.ttl', 'basic_out.ttl').
+e_files('basic_bnode.ttl', 'basic_bnode_out.ttl').
+e_files('has_transcript.ttl', 'has_transcript_out.ttl').
+e_files('depicts_building.ttl', 'depicts_building_out.ttl').
+
 :- begin_tests(entailment, [
         setup(init_ont),
         cleanup(rdf_reset_db)
     ]).
 
 % Entailment test files
-etfile('basic.ttl', 'basic_out.ttl').
-etfile('basic_bnode.ttl', 'basic_bnode_out.ttl').
-etfile('has_transcript.ttl', 'has_transcript_out.ttl').
-etfile('depicts_building.ttl', 'depicts_building_out.ttl').
-
 test(entailment, [
         setup(init_ont),
         cleanup(rdf_reset_db),
-        forall(etfile(InFile, OutFile)) ]) :-
+        forall(external_test_case(e_files, InFile, OutFile)) ]) :-
     assertion(atom(InFile)),
     assertion(atom(OutFile)),
     rdf_equal(Test, qaint:test),
@@ -128,25 +128,27 @@ init_rec :-
     rdf_assert(qaint:'testera', qacatalog:hasEntityGraph, qaint:'entities1', Catalogue),
     rdf_assert(qaint:'testerb', qacatalog:hasEntityGraph, qaint:'entities2', Catalogue).
 
+r_files('rec_building.ttl', 'rec_building_out.ttl').
+r_files('rec_ext_building.ttl', 'rec_ext_building_out.ttl').
+r_files('rec_drawingtype.ttl', 'rec_drawingtype_out.ttl').
+r_files('rec_firm.ttl', 'rec_firm_out.ttl').
+r_files('rec_ext_firm.ttl', 'rec_ext_firm_out.ttl').
+r_files('rec_person.ttl', 'rec_person_out.ttl').
+r_files('rec_ext_person.ttl', 'rec_ext_person_out.ttl').
+r_files('rec_ext_typology.ttl', 'rec_ext_typology_out.ttl').
+
+r_fail_files('rec_ext_drawingtype.ttl', _).
+
 :- begin_tests(reconciliation, [
         cleanup(rdf_reset_db),
         setup(init_ont)
     ]).
 
 % Reconciliation test files
-rtfile('rec_building.ttl', 'rec_building_out.ttl').
-rtfile('rec_ext_building.ttl', 'rec_ext_building_out.ttl').
-rtfile('rec_drawingtype.ttl', 'rec_drawingtype_out.ttl').
-rtfile('rec_firm.ttl', 'rec_firm_out.ttl').
-rtfile('rec_ext_firm.ttl', 'rec_ext_firm_out.ttl').
-rtfile('rec_person.ttl', 'rec_person_out.ttl').
-rtfile('rec_ext_person.ttl', 'rec_ext_person_out.ttl').
-rtfile('rec_ext_typology.ttl', 'rec_ext_typology_out.ttl').
-
 test(reconciliation, [
         setup(init_rec),
         cleanup(rdf_reset_db),
-        forall(rtfile(InFile, OutFile)) ]) :-
+        forall(external_test_case(r_files, InFile, OutFile)) ]) :-
     assertion(atom(InFile)),
     assertion(atom(OutFile)),
     rdf_equal(Test, qaint:test),
@@ -165,18 +167,26 @@ test(reconciliation, [
             output_graphs(Expected, Out)
     ).
 
-rtfile('rec_ext_drawingtype.ttl').
-
 test(reconciliation_fail, [
         setup(init_rec),
         cleanup(rdf_reset_db),
-        forall(rtfile(InFile)) ]) :-
+        forall(external_test_case(r_fail_files, InFile, OutFile)) ]) :-
     assertion(atom(InFile)),
     rdf_equal(Test, qaint:test),
     load_file(data(InFile), Test, _, [silent(true)]),
     findall(r(PE,B), reconciled_to(PE, B, Test), []).
 
 :- end_tests(reconciliation).
+
+external_test_case(Filepred, X, Y) :-
+    (
+        nb_current(Filepred, Files),
+        nonvar(Files)
+    ) -> (
+        member(X, Files),
+        call(Filepred, X, Y)
+    ) ;
+    call(Filepred, X, Y).
 
 
 % Setup predicates
