@@ -113,10 +113,26 @@ ingest(Filename, Graph) :-
     format(atom(LoadGraph), '~a~a', [BaseURI, '/graph#load']),
     load_file(Filename, LoadGraph),
     format(atom(CleanGraph), '~a~a', [BaseURI, '/graph#clean']),
-    cleanGraph(LoadGraph, CleanGraph),
+    clean_graph(LoadGraph, CleanGraph),
     format(atom(ResultGraph), '~a~a', [BaseURI, '/graph#result']),
     entailment(CleanGraph, ResultGraph),
-    readGraph(ResultGraph, Graph).
+    format(atom(ContentGraph), '~a~a', [BaseURI, '/graph#content']),
+    format(atom(ResourceGraph), '~a~a', [BaseURI, '/graph#resources']),
+    format(atom(Ingest), '~a~a?filename=~a', [BaseURI, '/Software#ingest', Filename]),
+    split_ingest(ResultGraph, ContentGraph, ResourceGraph),
+    now(Timestamp),
+    rdf_assert(Ingest, qacatalog:hasEntityGraph, ResourceGraph, Catalogue),
+    rdf_assert(Ingest, qacatalog:hasContentGraph, ContentGraph, Catalogue),
+    rdf_assert(ResourceGraph, qacatalog:dateIngested, Timestamp),
+    rdf_assert(ContentGraph, qacatalog:dateIngested, Timestamp),
+    read_graph(ResultGraph, Graph).
+
+now(TimeLiteral) :-
+    get_time(Timestamp),
+    stamp_date_time(Timestamp, DT, 'UTC'),
+    format_time(atom(TS), '%FT%TZ', DT),
+    rdf_equal(XSDString, xsd:string),
+    TimeLiteral=literal(type(XSDString, TS)).
 
 %%  atom_split(+In, +Sep, -Head, -Tail) is det
 %
@@ -158,7 +174,7 @@ load_file(Filename, Graph, BaseURI, Options) :-
     append(Options, [graph(Graph), base_uri(BaseURI)], ExtOptions),
     rdf_db:rdf_load(Filename, ExtOptions).
 
-cleanGraph(In, Clean) :-
+clean_graph(In, Clean) :-
     foreach(clean(S, P, O, In), call(assertNormalizedStmt, S, P, O, Clean)).
 
 %%  assertNormalizeStmt(+S, +P, +O, +G)
@@ -180,7 +196,7 @@ normalizeNode(Node, NormNode) :-
         Node=NormNode ;
         iri_normalized(Node, NormNode).
 
-readGraph(GraphURI, Graph) :-
+read_graph(GraphURI, Graph) :-
     findall(rdf(S,P,O), rdf(S, P, O, GraphURI), Graph).
 
 clean(S, P, O, G) :-
@@ -229,6 +245,34 @@ ground_bnode(S, G) :-
         foreach(rdf(S1,P,S), call(rdf_update, S1, P, S, object(ResourceURI)))
     ) ;
     true.
+
+split_ingest(ResultGraph, ContentGraph, ResourceGraph) :-
+    (
+        rdf(S,P,O,G),
+        (
+            instance_of(S, qldarch:'DigitalThing') ->
+            (
+                rdf_assert(S,P,O,ContentGraph),
+                fail
+            ) ;
+            instance_of(S, qldarch:'NonDigitalThing') ->
+            (
+                rdf_assert(S,P,O,ResourceGraph),
+                fail
+            ) ;
+                fail
+            )
+        )
+    ) ; true.
+    
+
+content(S,P,O,G) :-
+    rdf(S,P,O,G),
+    instance_of(S, qldarch:'DigitalThing').
+
+resources(S,P,O,G) :-
+    rdf(S,P,O,G),
+    instance_of(S, qldarch:'NonDigitalThing').
 
 entailed(S, P, O, G) :-
     entail(S, P, O, G) ; 
@@ -957,6 +1001,9 @@ range(Predicate, Range) :-
 qldarch(S, P, O) :-
     rdf(S, P, O, 'http://qldarch.net/ns/rdf/2012-06/terms#').
 
+catalogue(Catalogue) :-
+    rdf_equal(Catalogue, qacatalog:'').
+
 ontology('http://qldarch.net/ns/rdf/2012-06/terms#').
 
 ontology(S, P, O) :-
@@ -1027,8 +1074,15 @@ as_decimal(In, Out) :-
     rdf_equal(XSDDecimal, xsd:decimal),
     Out = literal(type(XSDDecimal, In)).
 
+catalogue(Catalogue) :-
+    rdf_equal(Catalogue, qacatalog:'').
+
+content_graph(ContentGraph) :-
+    catalogue(Catalogue),
+    rdf(_, qacatalog:hasContentGraph, ContentGraph, Catalogue).
+
 entity_graph(EntityGraph) :-
-    rdf_equal(Catalogue, qacatalog:''),
+    catalogue(Catalogue),
     rdf(_, qacatalog:hasEntityGraph, EntityGraph, Catalogue).
 
 entity_graph(EntityGraph, Default) :-
