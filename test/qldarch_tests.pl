@@ -74,6 +74,17 @@ test(all_subclasses) :-
     findall(sc(X,Y), is_subclass_of(X, Y), List),
     forall(member(sc(X,Y), List), is_subclass_of(X, Y)).
 
+test(number_of_subclass_pairs) :-
+    empty_nb_set(Set), !,
+    findall(X-Y, (is_subclass_of(X, Y), add_nb_set(sc(X,Y), Set, true)), List),
+    assertion(length(List, 266)),
+    assertion(is_subclass_of(X, Y)).
+
+test(number_of_classes_via_subclass) :-
+    empty_nb_set(Set), !,
+    findall(X, (is_subclass_of(X, _), add_nb_set(X, Set, true)), List),
+    assertion(length(List, 61)).
+
 test(indirect_subproperty) :-
     is_subproperty_of(qldarch:firmName, rdfs:label).
 
@@ -90,6 +101,7 @@ e_files('basic.ttl', 'basic_out.ttl').
 e_files('basic_bnode.ttl', 'basic_bnode_out.ttl').
 e_files('has_transcript.ttl', 'has_transcript_out.ttl').
 e_files('depicts_building.ttl', 'depicts_building_out.ttl').
+e_files('location.ttl', 'location_out.ttl').
 
 :- begin_tests(entailment, [
         setup(init_ont),
@@ -108,8 +120,7 @@ test(entailment, [
     rdf_equal(Out, qaint:out),
     load_file(data(InFile), Test, _, [silent(true)]),
     load_file(data(OutFile), Expected, _, [silent(true)]),
-    foreach(entail(S, P, O, Test), call(rdf_assert, S, P, O, Out)),
-    foreach(rdf(S, P, O, Test), call(rdf_assert, S, P, O, Out)),
+    foreach(entailed(S, P, O, Test), call(rdf_assert, S, P, O, Out)),
     (
         findall(rdf(S,P,O), rdf(S, P, O, Expected), ExpGraph),
         findall(rdf(S,P,O), rdf(S, P, O, Out), OutGraph),
@@ -170,7 +181,7 @@ test(reconciliation, [
 test(reconciliation_fail, [
         setup(init_rec),
         cleanup(rdf_reset_db),
-        forall(external_test_case(r_fail_files, InFile, OutFile)) ]) :-
+        forall(external_test_case(r_fail_files, InFile, _)) ]) :-
     assertion(atom(InFile)),
     rdf_equal(Test, qaint:test),
     load_file(data(InFile), Test, _, [silent(true)]),

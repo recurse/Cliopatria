@@ -9,6 +9,7 @@
         load_file/3,
         load_file/4,
         entail/4,
+        entailed/4,
         entailment/2,
         reconciled_to/3,
         atom_split/4,
@@ -33,7 +34,8 @@ This module provides qldarch ingest support.
 
 :- rdf_meta
     assertNormalizedStmt(o,o,o,+),
-    entail(r,r,?,r),
+    entail(r,r,o,r),
+    entailed(r,r,o,r),
     qldarch(o,o,o),
     reconciled_to(r,r,r),
     logged_reconciled_to(r,r,r),
@@ -192,8 +194,7 @@ clean(S, P, O, G) :-
 entailment(Graph, OutGraph) :-
     rdf_bnode(TempGraph),
     rdf_create_graph(TempGraph),
-    foreach(entail(S, P, O, Graph), call(rdf_assert, S, P, O, TempGraph)),
-    foreach(rdf(S, P, O, Graph), call(rdf_assert, S, P, O, TempGraph)),
+    foreach(entailed(S, P, O, Graph), call(rdf_assert, S, P, O, TempGraph)),
     ( setof(S, is_blank_resource_in_graph(S, TempGraph), Subjects) ; Subjects = []),
     foreach(member(X, Subjects), call(ground_bnode, X, TempGraph)), !,
     ( var(OutGraph) -> rdf_bnode(OutGraph) ; rdf_unload_graph(OutGraph) ),
@@ -229,12 +230,21 @@ ground_bnode(S, G) :-
     ) ;
     true.
 
+entailed(S, P, O, G) :-
+    entail(S, P, O, G) ; 
+    (
+        rdf(S, P, Obj, G),
+        ensure_typed(Obj, O)
+    ).
+
+
 % FIXME: TESTS REQUIRED
 entail(S, P, O, G) :-
-    rdf(S, P, O, G) ->
-    true ;
+    rdf(S, P, Obj, G) ->
+    ensure_typed(Obj, O) ;
     (   owl_inverse_of(P, IP),
-        rdf(O, IP, S, G)
+        rdf(Obj, IP, S, G),
+        ensure_typed(Obj, O)
     ).
 
 %   {?P a owl:SymmetricProperty. ?S ?P ?O} => {?O ?P ?S}.
@@ -302,10 +312,12 @@ entail(Building, AssociatedFirm, Firm, G) :-
 %   Note: ?do qldarch:location ?location is exported directly from omeka via D2RQ
 entail(Building, QALocation, Location, G) :-
     rdf_equal(QALocation, qldarch:location),
-    rdf(DigitalObject, QALocation, Location, G),
+    rdf(DigitalObject, QALocation, LocationLit, G),
+    label_value(LocationLit, LocationVal),
+    rdf_equal(XSDString, xsd:string),
+    rdf_equal(Location, literal(type(XSDString, LocationVal))),
     instance_of(DigitalObject, qldarch:'DigitalObject', G),
-    classification(DigitalObject, qldarch:depictsBuilding, Building, G),
-    instance_of(Building, qldarch:'Structure', G).
+    classification(DigitalObject, qldarch:depictsBuilding, Building, G).
 
 %   { ?do a qldarch:DigitalObject .
 %     ?do qaat:latitude ?lat .
@@ -1025,6 +1037,19 @@ entity_graph(EntityGraph, Default) :-
 entity_graph(EntityGraph, _Default) :-
     entity_graph(EntityGraph).
     
+ensure_typed(A, A) :-
+    atom(A).
+
+ensure_typed(literal(type(T,L)), literal(type(T,L))) :- !.
+
+ensure_typed(literal(lang(L, A)), literal(lang(L, A))) :- !.
+
+ensure_typed(literal(L), O) :-
+    atom(L), !,
+    rdf_equal(XSDString, xsd:string),
+    O = literal(type(XSDString, L)).
+
+
 label_value(literal(type(_, Label)), Value) :-
     Label = Value.
 

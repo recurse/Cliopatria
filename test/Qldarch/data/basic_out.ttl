@@ -2,8 +2,9 @@
 @prefix qaat: <http://qldarch.net/ns/omeka/2012-11/auxterms#> .
 @prefix qaomeka: <http://qldarch.net/omeka/items/show/> .
 @prefix qldarch: <http://qldarch.net/ns/rdf/2012-06/terms#> .
+@prefix     xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 # qaat:PseudoEntity obtained via subclass entailment.
 
 qaomeka:1 a qaat:BuildingTypology, qaat:PseudoEntity, qaat:AuxClass ;
-  qaat:label "Commercial buildings" .
+  qaat:label "Commercial buildings"^^xsd:string .
