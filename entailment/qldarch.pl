@@ -35,18 +35,13 @@
 :- use_module(rdfql(rdfql_runtime)).	% runtime tests
 :- use_module(library('semweb/rdf_db'),
 	      [ rdf_global_id/2,
-		rdf_reachable/3,
-		rdf_has/3,
 		rdf_subject/1,
 		rdf_equal/2,
 		(rdf_meta)/1,
 		op(_,_,_)
 	      ]).
-:- use_module(library('semweb/rdfs'),
-	      [ rdfs_subclass_of/2,
-		rdfs_subproperty_of/2,
-		rdfs_individual_of/2
-	      ]).
+
+:- use_module(api(qaapi)).
 
 /** <module> RDFS-Lite entailment
 
@@ -66,33 +61,28 @@ type-reasoning on the basis of domains/ranges of properties. It does:
 */
 
 :- rdf_meta
-	rdf(o,o,o).
+    rdf(o,o,o),
+	rdf(o,o,o,o).
 
 :- public
-	rdf/3.
+	rdf/3,
+	rdf/4.
+
+rdf(S, P, O, G) :-
+    debug(qldarch, 'checking current: ~w ~w ~w in ~w~n', [S,P,O,G]),
+    rdf_equal(P, qacatalog:currentContentGraph),
+    rdf_equal(G, qacatalog:''), !,
+    debug(qldarch, 'entailing current graph~n', []),
+    rdf_equal(qacatalog:'', S),
+    content_graph(O).
+
+rdf(S, P, O, G) :-
+    debug(qldarch, 'entailing graph ~w~n', [G]),
+	rdf_db:rdf(S, P, O, G).
 
 rdf(S, P, O) :-
-	var(P), !,
-	rdf_db:rdf(S,P,O).
-rdf(S, serql:directSubClassOf, O) :- !,
-	rdf_has(S, rdfs:subClassOf, O).
-rdf(S, serql:directType, O) :- !,
-	rdf_has(S, rdf:type, O).
-rdf(S, serql:directSubPropertyOf, O) :- !,
-	rdf_has(S, rdfs:subPropertyOf, O).
-rdf(S, rdfs:subClassOf, O) :- !,
-	rdf_reachable(S, rdfs:subClassOf, O).
-rdf(S, rdfs:subPropertyOf, O) :- !,
-	rdf_reachable(S, rdfs:subPropertyOf, O).
-rdf(S, rdf:type, O) :- !,
-	(   var(S), var(O)
-	->  rdf_subject(S)
-	;   true
-	),
-	rdfs_individual_of(S, O).
-rdf(S, P, O) :-
-	rdf_has(S, P, O).
-
+    debug(qldarch, 'entailing entire graph ', []),
+	rdf_db:rdf(S, P, O).
 
 		 /*******************************
 		 *	       REGISTER		*

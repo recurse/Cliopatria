@@ -13,6 +13,7 @@
         entailment/2,
         reconciled_to/3,
         atom_split/4,
+        content_graph/1,
         do/1
     ]).
 :- use_module(library(semweb/rdf_db)).
@@ -95,6 +96,13 @@ qaat_ns(In, Out) :-
     qaat_ns(QAAT),
     atom_concat(QAAT, In, Out).
     
+catalogue_ns(NS) :-
+    rdf_equal(qacatalog:'', NS).
+
+catalogue_ns(Suffix, URI) :-
+    catalogue_ns(NS),
+    atom_concat(NS, Suffix, URI).
+
 load_omeka(Request) :-
 	http_parameters(Request,
 			[ filename(Filename,
@@ -121,18 +129,37 @@ ingest(Filename, Graph) :-
     format(atom(Ingest), '~a~a?filename=~a', [BaseURI, '/Software#ingest', Filename]),
     split_ingest(ResultGraph, ContentGraph, ResourceGraph),
     now(Timestamp),
+    catalogue(Catalogue),
     rdf_assert(Ingest, qacatalog:hasEntityGraph, ResourceGraph, Catalogue),
     rdf_assert(Ingest, qacatalog:hasContentGraph, ContentGraph, Catalogue),
-    rdf_assert(ResourceGraph, qacatalog:dateIngested, Timestamp),
-    rdf_assert(ContentGraph, qacatalog:dateIngested, Timestamp),
+    rdf_assert(ResourceGraph, qacatalog:dateIngested, Timestamp, Catalogue),
+    rdf_assert(ContentGraph, qacatalog:dateIngested, Timestamp, Catalogue),
     read_graph(ResultGraph, Graph).
+
+split_ingest(ResultGraph, ContentGraph, ResourceGraph) :-
+    (
+        rdf(S,P,O,ResultGraph),
+        (
+            instance_of(S, qldarch:'DigitalThing', ResultGraph) ->
+            (
+                rdf_assert(S,P,O,ContentGraph),
+                fail
+            ) ;
+            instance_of(S, qldarch:'NonDigitalThing', ResultGraph) ->
+            (
+                rdf_assert(S,P,O,ResourceGraph),
+                fail
+            ) ;
+                fail
+        )
+    ) ; true.
 
 now(TimeLiteral) :-
     get_time(Timestamp),
     stamp_date_time(Timestamp, DT, 'UTC'),
     format_time(atom(TS), '%FT%TZ', DT),
-    rdf_equal(XSDString, xsd:string),
-    TimeLiteral=literal(type(XSDString, TS)).
+    rdf_equal(XSDDateTime, xsd:dateTime),
+    TimeLiteral=literal(type(XSDDateTime, TS)).
 
 %%  atom_split(+In, +Sep, -Head, -Tail) is det
 %
@@ -245,26 +272,6 @@ ground_bnode(S, G) :-
         foreach(rdf(S1,P,S), call(rdf_update, S1, P, S, object(ResourceURI)))
     ) ;
     true.
-
-split_ingest(ResultGraph, ContentGraph, ResourceGraph) :-
-    (
-        rdf(S,P,O,G),
-        (
-            instance_of(S, qldarch:'DigitalThing') ->
-            (
-                rdf_assert(S,P,O,ContentGraph),
-                fail
-            ) ;
-            instance_of(S, qldarch:'NonDigitalThing') ->
-            (
-                rdf_assert(S,P,O,ResourceGraph),
-                fail
-            ) ;
-                fail
-            )
-        )
-    ) ; true.
-    
 
 content(S,P,O,G) :-
     rdf(S,P,O,G),
@@ -1001,9 +1008,6 @@ range(Predicate, Range) :-
 qldarch(S, P, O) :-
     rdf(S, P, O, 'http://qldarch.net/ns/rdf/2012-06/terms#').
 
-catalogue(Catalogue) :-
-    rdf_equal(Catalogue, qacatalog:'').
-
 ontology('http://qldarch.net/ns/rdf/2012-06/terms#').
 
 ontology(S, P, O) :-
@@ -1079,7 +1083,14 @@ catalogue(Catalogue) :-
 
 content_graph(ContentGraph) :-
     catalogue(Catalogue),
-    rdf(_, qacatalog:hasContentGraph, ContentGraph, Catalogue).
+    catalogue_ns(dateIngested, DateIngested),
+    findall(IngestDate-ContentGraph, (
+        rdf(_, qacatalog:hasContentGraph, ContentGraph, Catalogue),
+        rdf(ContentGraph, DateIngested, literal(type(_,IngestDate)), Catalogue)
+    ), Result),
+    keysort(Result, Sorted),
+    last(Sorted, MostRecent),
+    _-ContentGraph = MostRecent.
 
 entity_graph(EntityGraph) :-
     catalogue(Catalogue),
