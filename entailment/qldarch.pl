@@ -68,21 +68,88 @@ type-reasoning on the basis of domains/ranges of properties. It does:
 	rdf/3,
 	rdf/4.
 
-rdf(S, P, O, G) :-
-    debug(qldarch, 'checking current: ~w ~w ~w in ~w~n', [S,P,O,G]),
-    rdf_equal(P, qacatalog:currentContentGraph),
-    rdf_equal(G, qacatalog:''), !,
-    debug(qldarch, 'entailing current graph~n', []),
-    rdf_equal(qacatalog:'', S),
-    content_graph(O).
+/*
+ * Define rdf/4 to allow capturing of catalogue
+ */
 
 rdf(S, P, O, G) :-
-    debug(qldarch, 'entailing graph ~w~n', [G]),
-	rdf_db:rdf(S, P, O, G).
+    debug(qldarch, 'Entailing 1: ~W ~W ~W in ~W', [S, [quoted(true)], P, [quoted(true)], O, [quoted(true)], G, [quoted(true)]]),
+    rdf_equal(Cat, qacatalog:''),
+    debug(qldarch, 'Cat(~w) = ~w', [Cat, G]),
+    ( G = Cat ; G =.. [:, Cat, _] ),
+    debug(qldarch, 'Querying catalogue: ~w', [G]),
+    catalogue(S, P, O).
+
+rdf(S, P, O, G) :-
+    debug(qldarch, 'Entailing 2: ~W ~W ~W in ~W', [S, [quoted(true)], P, [quoted(true)], O, [quoted(true)], G, [quoted(true)]]),
+    (
+        ontology(G) ;
+        ( G =.. [:, Inner, _], ontology(Inner) )
+    ),
+    debug(qldarch, 'Querying ontology: ~w', [G]),
+    tbox(S, P, O).
+
+%    rdf_equal(qacatalog:'', S),
+%    debug(qldarch, 'proved subject: ~w~n', [S]),
+%    debug(qldarch, 'entailing current graph~n', []),
+%    rdf_equal(P, qacatalog:currentContentGraph),
+%    debug(qldarch, 'proved predicate: ~w~n', [P]),
+%    content_graph(O),
+%    debug(qldarch, 'proved object: ~w~n', [O]).
+
+%rdf(S, P, O, G) :-
+%    debug(qldarch, 'entailing graph ~w~n', [G]),
+%	rdf_db:rdf(S, P, O, G).
 
 rdf(S, P, O) :-
-    debug(qldarch, 'entailing entire graph ', []),
-	rdf_db:rdf(S, P, O).
+    ( content_graph(G) ; entity_graph(G) ),
+    debug(qldarch, 'Querying type ~w ~w ~w in ~w', [S, P, O, G]),
+    abox(S, P, O, G).
+
+/*
+ * Utility methods.
+ */
+
+catalogue(S, P, O) :-
+    (
+        rdf_equal(S, qacatalog:'') ->
+        has_graphs(P, O)
+    ).
+
+has_graphs(P, O) :-
+    (
+        rdf_equal(P, qacatalog:'hasEntityGraph'),
+        entity_graph(O)
+    ) ;
+    (
+        rdf_equal(P, qacatalog:'hasContentGraph'),
+        content_graph(O)
+    ).
+
+tbox(S, P, O) :-
+    (
+        rdf_equal(P, rdfs:subClassOf),
+        is_subclass_of(S, O),
+        nonvar(S),nonvar(O) % Ensure grounded
+    ) ;
+    (
+        rdf_equal(P, rdfs:subPropertyOf),
+        is_subproperty_of(S, O),
+        nonvar(S),nonvar(O) % Ensure grounded
+    ) ;
+    (
+        ontology(G),
+        abox(S, P, O, G)
+    ).
+
+abox(S, P, O, G) :-
+    (
+        rdf_equal(P, rdf:type),
+        qaingest:instance_of(S, O, G)
+    ) ;
+    (
+        rdf_db:rdf(S, P, O, G)
+    ).
 
 		 /*******************************
 		 *	       REGISTER		*

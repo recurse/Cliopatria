@@ -14,6 +14,7 @@
         reconciled_to/3,
         atom_split/4,
         content_graph/1,
+        entity_graph/1,
         do/1
     ]).
 :- use_module(library(semweb/rdf_db)).
@@ -71,6 +72,7 @@ This module provides qldarch ingest support.
 :- rdf_register_ns('geo', 'http://www.w3.org/2003/01/geo/wgs84_pos#').
 :- rdf_register_ns('frbr', 'http://purl.org/vocab/frbr/core#').
 :- rdf_register_ns('crm', 'http://www.cidoc-crm.org/cidoc-crm/').
+:- rdf_register_ns('serql', 'http://www.openrdf.org/schema/serql#').
 
 %%	load_omeka(+Request)
 %
@@ -255,7 +257,7 @@ entailment(Graph, OutGraph) :-
 ground_bnode(S, G) :-
     findall(C, instance_of(S, C, G), Classes),
     member(C, Classes) *-> (
-        \+ ( qldarch(Sub, rdfs:subClassOf, C), member(Sub, Classes) ),
+        \+ ( ontology(Sub, rdfs:subClassOf, C), member(Sub, Classes) ),
         (
             (   ifprolog:index(C, '#', _) ->
                 atom_split(C, '#', Fragments),
@@ -288,7 +290,6 @@ entailed(S, P, O, G) :-
         ensure_typed(Obj, O)
     ).
 
-
 % FIXME: TESTS REQUIRED
 entail(S, P, O, G) :-
     rdf(S, P, Obj, G) ->
@@ -297,6 +298,7 @@ entail(S, P, O, G) :-
         rdf(Obj, IP, S, G),
         ensure_typed(Obj, O)
     ).
+
 
 %   {?P a owl:SymmetricProperty. ?S ?P ?O} => {?O ?P ?S}.
 %entail(S, P, O, G) :-
@@ -441,7 +443,7 @@ related_to(S, ImpliedPred, O, G) :-
     instance_of(Pred, owl:'ObjectProperty', qldarch:''),
     is_subclass_of(RelClass, qldarch:'Relationship'),
     is_subclass_of(ImplyingRelClass, RelClass),
-    qldarch(ImplyingRelClass, qldarch:impliesRelationship, ImpliedPred),
+    ontology(ImplyingRelClass, qldarch:impliesRelationship, ImpliedPred),
     entail(S, Pred, O, G).
 
 %   { ?e qaat:reconciledTo ?person .
@@ -624,8 +626,8 @@ logged_reconciled_to_drawing_type(PseudoEntity, DrawingType, G) :-
     atom(PseudoEntity),
     rdf(PseudoEntity, qaat:label, Label, G),
     label_value(Label, Value),
-    qldarch(DrawingType, qldarch:label, literal(exact(Value), _)),
-    qldarch(DrawingType, skos:inScheme, qavocab:'DrawingTypes'),
+    ontology(DrawingType, qldarch:label, literal(exact(Value), _)),
+    ontology(DrawingType, skos:inScheme, qavocab:'DrawingTypes'),
     logged_instance_of(DrawingType, skos:'Concept', qldarch:''), !.
 
 %   { ?e a qaat:Firm .
@@ -755,8 +757,8 @@ reconciled_to_drawing_type(PseudoEntity, DrawingType, G) :-
     atom(PseudoEntity),
     rdf(PseudoEntity, qaat:label, Label, G),
     label_value(Label, Value),
-    qldarch(DrawingType, qldarch:label, literal(exact(Value), _)),
-    qldarch(DrawingType, skos:inScheme, qavocab:'DrawingTypes'),
+    ontology(DrawingType, qldarch:label, literal(exact(Value), _)),
+    ontology(DrawingType, skos:inScheme, qavocab:'DrawingTypes'),
     instance_of(DrawingType, skos:'Concept', qldarch:''), !.
 
 %   { ?e a qaat:Firm .
@@ -922,9 +924,11 @@ is_subclass_of(Sub, Super) :-
         )
     ) ;
     (   var(Sub), var(Super),
+        empty_nb_set(Set),
         ontology(Ontology),
         instance_of(Sub, rdfs:'Class', Ontology),
-        is_subclass_of(Sub, Super)
+        is_subclass_of(Sub, Super),
+        add_nb_set(Sub-Super, Set, true)
     ).
 
 is_subproperty_of(Sub, Super) :-
@@ -961,9 +965,11 @@ is_subproperty_of(Sub, Super) :-
         )
     ) ;
     (   var(Sub), var(Super),
+        empty_nb_set(Set),
         ontology(Ontology),
         instance_of(Sub, rdf:'Property', Ontology),
-        is_subproperty_of(Sub, Super)
+        is_subproperty_of(Sub, Super),
+        add_nb_set(Sub-Super, Set, true)
     ).
 
 
@@ -1005,14 +1011,21 @@ domain(Predicate, Domain) :-
 range(Predicate, Range) :-
     ontology(Predicate, rdfs:range, Range).
 
-qldarch(S, P, O) :-
-    rdf(S, P, O, 'http://qldarch.net/ns/rdf/2012-06/terms#').
-
 ontology('http://qldarch.net/ns/rdf/2012-06/terms#').
 
 ontology(S, P, O) :-
     ontology(G),
     rdf(S, P, O, G).
+
+ontology(S, P, O) :-
+    rdf_equal(P, qldarch:directSubClassOf),
+    is_subject_in_graph(S),
+    setof(C, instance_of(S, C, 'http://qldarch.net/ns/rdf/2012-06/terms#'), Classes),
+    member(O, Classes),
+    \+ (
+        ontology(Sub, rdfs:subClassOf, O),
+        member(Sub, Classes)
+    ).
 
 is_blank_resource_in_graph(R, G) :-
     empty_nb_set(Set),
@@ -1051,16 +1064,22 @@ is_resource_in_graph(R, G) :-
     ).
 
 is_subject_in_graph(S, G) :-
+    empty_nb_set(Set),
     rdf(S, _, _, G),
-    rdf_is_resource(S).
+    rdf_is_resource(S),
+    add_nb_set(S, Set, true).
 
 is_predicate_in_graph(P, G) :-
+    empty_nb_set(Set),
     rdf(_, P, _, G),
-    rdf_is_resource(P).
+    rdf_is_resource(P),
+    add_nb_set(P, Set, true).
 
 is_object_in_graph(O, G) :-
+    empty_nb_set(Set),
     rdf(_, _, O, G),
-    rdf_is_resource(O).
+    rdf_is_resource(O),
+    add_nb_set(O, Set, true).
 
 as_decimal(type(_, Raw), Out) :-
     !, atom_number(Raw, _),
